@@ -26,3 +26,6 @@ Slow is smooth: each concept gets its own branch and a real mini-project.
 ## License
 
 MIT, see [LICENSE](LICENSE).
+
+---
+maintained · verified 2026-09-30
