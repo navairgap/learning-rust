@@ -37,3 +37,7 @@ maintained · verified 2026-10-02
 ## How to use this repo
 
 each top-level directory is one exercise, ordered roughly by difficulty. read the `README.md` inside each, implement it, then compare with the reference in `solutions/`. resist the urge to peek first — the compiler is a better teacher than the answer key.
+
+## How to use this repo
+
+each top-level directory is one exercise, ordered roughly by difficulty. read the `README.md` inside each, implement it, then compare with the reference in `solutions/`. resist the urge to peek first — the compiler is a better teacher than the answer key.
