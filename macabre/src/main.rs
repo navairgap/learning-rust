@@ -162,3 +162,14 @@ fn cmd_original(name: &str) -> ExitCode {
     }
 }
 
+/// Save the interface's current MAC as "the original" the first time we touch it.
+fn original_guard(name: &str) -> std::io::Result<()> {
+    match iface::load_original(name)? {
+        Some(_) => Ok(()),
+        None => {
+            let current = iface::get_mac(name)?;
+            iface::save_original(name, current)
+        }
+    }
+}
+
