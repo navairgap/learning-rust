@@ -81,3 +81,18 @@ fn with_mac(args: &[String], f: fn(&str, MacAddress) -> ExitCode) -> ExitCode {
     }
 }
 
+fn cmd_list() -> ExitCode {
+    match iface::list_interfaces() {
+        Ok(list) => {
+            if list.is_empty() {
+                println!("no interfaces found");
+            }
+            for i in list {
+                println!("{:<16} {}", i.name, i.mac);
+            }
+            ExitCode::SUCCESS
+        }
+        Err(e) => fail(&format!("listing interfaces: {e}")),
+    }
+}
+
