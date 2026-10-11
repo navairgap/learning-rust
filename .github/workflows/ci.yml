@@ -24,5 +24,13 @@ jobs:
         run: cargo test --verbose
       - name: clippy
         run: cargo clippy -- -D warnings
-      - name: fmt check
-        run: cargo fmt --check
+      - name: format (auto-commit)
+        run: |
+          cargo fmt
+          if ! git diff --quiet; then
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git add -A
+            git commit -m "style: cargo fmt"
+            git push
+          fi
