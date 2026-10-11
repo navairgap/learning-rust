@@ -170,3 +170,17 @@ fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, S
     Ok(map)
 }
 
+fn write_table(
+    path: &std::path::Path,
+    table: &std::collections::HashMap<String, String>,
+) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let body: Vec<String> = table
+        .iter()
+        .map(|(k, v)| format!("\"{k}\":\"{v}\""))
+        .collect();
+    fs::write(path, format!("{{{}}}", body.join(",")))
+}
+
