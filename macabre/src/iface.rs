@@ -148,3 +148,25 @@ fn load_table(path: &std::path::Path) -> io::Result<std::collections::HashMap<St
     }
 }
 
+/// Minimal JSON object reader: {"name":"aa:bb:..."} — enough for this store.
+fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, String>> {
+    let mut map = std::collections::HashMap::new();
+    let trimmed = text
+        .trim()
+        .trim_start_matches('{')
+        .trim_end_matches('}')
+        .trim();
+    if trimmed.is_empty() {
+        return Ok(map);
+    }
+    for pair in trimmed.split(',') {
+        let mut kv = pair.splitn(2, ':');
+        let k = kv.next().unwrap_or("").trim().trim_matches('"');
+        let v = kv.next().unwrap_or("").trim().trim_matches('"');
+        if !k.is_empty() {
+            map.insert(k.to_string(), v.to_string());
+        }
+    }
+    Ok(map)
+}
+
