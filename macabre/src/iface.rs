@@ -109,3 +109,16 @@ pub fn save_original(name: &str, mac: MacAddress) -> io::Result<()> {
     write_table(&path, &table)
 }
 
+/// Read the saved original MAC for an interface, if any.
+pub fn load_original(name: &str) -> io::Result<Option<MacAddress>> {
+    let path = store_path()?;
+    let table = load_table(&path)?;
+    match table.get(name) {
+        Some(s) => match s.parse() {
+            Ok(mac) => Ok(Some(mac)),
+            Err(_) => Ok(None),
+        },
+        None => Ok(None),
+    }
+}
+
