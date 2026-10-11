@@ -140,3 +140,11 @@ fn store_path() -> io::Result<std::path::PathBuf> {
     Ok(dir.join("macabre/originals.json"))
 }
 
+fn load_table(path: &std::path::Path) -> io::Result<std::collections::HashMap<String, String>> {
+    match fs::read_to_string(path) {
+        Ok(text) => serdeless_parse(&text),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(std::collections::HashMap::new()),
+        Err(e) => Err(e),
+    }
+}
+
