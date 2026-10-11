@@ -41,3 +41,7 @@ each top-level directory is one exercise, ordered roughly by difficulty. read th
 ## How to use this repo
 
 each top-level directory is one exercise, ordered roughly by difficulty. read the `README.md` inside each, implement it, then compare with the reference in `solutions/`. resist the urge to peek first — the compiler is a better teacher than the answer key.
+
+## projects
+
+- **macabre** — change and restore interface MAC addresses on Linux (ioctls, zero-dep JSON store, tested). see [macabre/](macabre/).
