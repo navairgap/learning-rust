@@ -53,3 +53,13 @@ fn main() -> ExitCode {
     }
 }
 
+fn with_iface(args: &[String], f: fn(&str) -> ExitCode) -> ExitCode {
+    match args.get(1) {
+        Some(name) => f(name),
+        None => {
+            eprintln!("macabre: missing interface name");
+            ExitCode::from(2)
+        }
+    }
+}
+
