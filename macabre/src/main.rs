@@ -63,3 +63,21 @@ fn with_iface(args: &[String], f: fn(&str) -> ExitCode) -> ExitCode {
     }
 }
 
+fn with_mac(args: &[String], f: fn(&str, MacAddress) -> ExitCode) -> ExitCode {
+    let Some(name) = args.get(1) else {
+        eprintln!("macabre: missing interface name");
+        return ExitCode::from(2);
+    };
+    let Some(mac_str) = args.get(2) else {
+        eprintln!("macabre: missing MAC address");
+        return ExitCode::from(2);
+    };
+    match mac_str.parse::<MacAddress>() {
+        Ok(mac) => f(name, mac),
+        Err(e) => {
+            eprintln!("macabre: bad MAC {mac_str:?}: {e}");
+            ExitCode::from(2)
+        }
+    }
+}
+
