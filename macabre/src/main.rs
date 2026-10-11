@@ -122,3 +122,9 @@ fn cmd_set(name: &str, mac: MacAddress) -> ExitCode {
     }
 }
 
+fn cmd_random(name: &str) -> ExitCode {
+    let mac = MacAddress::random_local();
+    println!("{name}: using {mac}");
+    cmd_set(name, mac)
+}
+
