@@ -128,3 +128,23 @@ fn cmd_random(name: &str) -> ExitCode {
     cmd_set(name, mac)
 }
 
+fn cmd_reset(name: &str) -> ExitCode {
+    if !root() {
+        return fail("resetting a MAC requires root (run with sudo)");
+    }
+    match iface::load_original(name) {
+        Err(e) => fail(&format!("reading saved MAC: {e}")),
+        Ok(None) => fail(&format!("{name}: no saved original MAC — nothing to reset")),
+        Ok(Some(mac)) => match iface::set_mac(name, mac) {
+            Ok(()) => match iface::clear_original(name) {
+                Ok(()) => {
+                    println!("{name}: restored to {mac}");
+                    ExitCode::SUCCESS
+                }
+                Err(e) => fail(&format!("restored, but clearing the store failed: {e}")),
+            },
+            Err(e) => fail(&format!("{name}: {e}")),
+        },
+    }
+}
+
