@@ -96,3 +96,13 @@ fn cmd_list() -> ExitCode {
     }
 }
 
+fn cmd_get(name: &str) -> ExitCode {
+    match iface::get_mac(name) {
+        Ok(mac) => {
+            println!("{mac}");
+            ExitCode::SUCCESS
+        }
+        Err(e) => fail(&format!("{name}: {e}")),
+    }
+}
+
