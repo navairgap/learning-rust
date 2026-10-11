@@ -130,3 +130,13 @@ pub fn clear_original(name: &str) -> io::Result<()> {
     write_table(&path, &table)
 }
 
+fn store_path() -> io::Result<std::path::PathBuf> {
+    let dir = std::env::var_os("XDG_DATA_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".local/share"))
+        })
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no HOME or XDG_DATA_HOME"))?;
+    Ok(dir.join("macabre/originals.json"))
+}
+
