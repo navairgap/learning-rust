@@ -148,3 +148,17 @@ fn cmd_reset(name: &str) -> ExitCode {
     }
 }
 
+fn cmd_original(name: &str) -> ExitCode {
+    match iface::load_original(name) {
+        Ok(Some(mac)) => {
+            println!("{mac}");
+            ExitCode::SUCCESS
+        }
+        Ok(None) => {
+            eprintln!("{name}: no saved original MAC");
+            ExitCode::from(1)
+        }
+        Err(e) => fail(&format!("reading store: {e}")),
+    }
+}
+
