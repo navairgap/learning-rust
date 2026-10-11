@@ -50,3 +50,19 @@ fn control_socket() -> io::Result<i32> {
     }
 }
 
+/// Build a zeroed ifreq with the interface name filled in.
+fn ifreq_for(name: &str) -> io::Result<ifreq> {
+    let bytes = OsStr::new(name).as_bytes();
+    if bytes.is_empty() || bytes.len() >= libc::IFNAMSIZ {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("bad interface name {name:?}"),
+        ));
+    }
+    let mut req: ifreq = unsafe { std::mem::zeroed() };
+    for (i, &b) in bytes.iter().enumerate() {
+        req.ifr_name[i] = b as c_char;
+    }
+    Ok(req)
+}
+
