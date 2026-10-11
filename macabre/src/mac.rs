@@ -96,3 +96,55 @@ impl fmt::Display for MacAddress {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_valid_mac() {
+        let mac: MacAddress = "de:ad:be:ef:00:01".parse().unwrap();
+        assert_eq!(mac.octets(), [0xde, 0xad, 0xbe, 0xef, 0x00, 0x01]);
+    }
+
+    #[test]
+    fn rejects_wrong_length() {
+        assert_eq!("de:ad:be:ef".parse::<MacAddress>().unwrap_err(),
+                   ParseMacError::BadLength);
+        assert_eq!("de:ad:be:ef:00:01:02".parse::<MacAddress>().unwrap_err(),
+                   ParseMacError::BadLength);
+    }
+
+    #[test]
+    fn rejects_bad_hex() {
+        assert_eq!("de:ad:be:ef:00:zz".parse::<MacAddress>().unwrap_err(),
+                   ParseMacError::BadOctet);
+        assert_eq!("de:ad:be:ef:0:01".parse::<MacAddress>().unwrap_err(),
+                   ParseMacError::BadOctet);
+    }
+
+    #[test]
+    fn display_roundtrips() {
+        let mac: MacAddress = "aa:bb:cc:dd:ee:ff".parse().unwrap();
+        assert_eq!(mac.to_string(), "aa:bb:cc:dd:ee:ff");
+        let back: MacAddress = mac.to_string().parse().unwrap();
+        assert_eq!(back, mac);
+    }
+
+    #[test]
+    fn random_is_local_and_unicast() {
+        for _ in 0..64 {
+            let mac = MacAddress::random_local();
+            assert!(mac.is_locally_administered());
+            assert!(mac.is_unicast());
+        }
+    }
+
+    #[test]
+    fn flag_bits_detected() {
+        let mcast: MacAddress = "01:00:00:00:00:01".parse().unwrap();
+        assert!(!mcast.is_unicast());
+        let local: MacAddress = "02:00:00:00:00:01".parse().unwrap();
+        assert!(local.is_locally_administered());
+        assert!(local.is_unicast());
+    }
+}
