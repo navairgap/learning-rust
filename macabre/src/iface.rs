@@ -101,3 +101,11 @@ pub fn set_mac(name: &str, mac: MacAddress) -> io::Result<()> {
     Ok(())
 }
 
+/// Save an interface's current MAC to the store file.
+pub fn save_original(name: &str, mac: MacAddress) -> io::Result<()> {
+    let path = store_path()?;
+    let mut table = load_table(&path)?;
+    table.insert(name.to_string(), mac.to_string());
+    write_table(&path, &table)
+}
+
