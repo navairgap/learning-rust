@@ -5,7 +5,7 @@ use std::fs;
 use std::io;
 use std::os::unix::ffi::OsStrExt;
 
-use libc::{ifreq, ioctl, sockaddr, AF_PACKET, SOCK_DGRAM, SIOCGIFHWADDR, SIOCSIFHWADDR};
+use libc::{ifreq, ioctl, sockaddr, AF_PACKET, SIOCGIFHWADDR, SIOCSIFHWADDR, SOCK_DGRAM};
 
 use crate::mac::MacAddress;
 
@@ -198,7 +198,10 @@ mod tests {
                 .join(",")
         );
         let back = serdeless_parse(&text).unwrap();
-        assert_eq!(back.get("eth0").map(String::as_str), Some("aa:bb:cc:dd:ee:ff"));
+        assert_eq!(
+            back.get("eth0").map(String::as_str),
+            Some("aa:bb:cc:dd:ee:ff")
+        );
     }
 
     #[test]

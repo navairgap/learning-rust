@@ -108,18 +108,26 @@ mod tests {
 
     #[test]
     fn rejects_wrong_length() {
-        assert_eq!("de:ad:be:ef".parse::<MacAddress>().unwrap_err(),
-                   ParseMacError::BadLength);
-        assert_eq!("de:ad:be:ef:00:01:02".parse::<MacAddress>().unwrap_err(),
-                   ParseMacError::BadLength);
+        assert_eq!(
+            "de:ad:be:ef".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadLength
+        );
+        assert_eq!(
+            "de:ad:be:ef:00:01:02".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadLength
+        );
     }
 
     #[test]
     fn rejects_bad_hex() {
-        assert_eq!("de:ad:be:ef:00:zz".parse::<MacAddress>().unwrap_err(),
-                   ParseMacError::BadOctet);
-        assert_eq!("de:ad:be:ef:0:01".parse::<MacAddress>().unwrap_err(),
-                   ParseMacError::BadOctet);
+        assert_eq!(
+            "de:ad:be:ef:00:zz".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
+        assert_eq!(
+            "de:ad:be:ef:0:01".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
     }
 
     #[test]
