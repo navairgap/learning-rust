@@ -184,3 +184,35 @@ fn write_table(
     fs::write(path, format!("{{{}}}", body.join(",")))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn json_roundtrip() {
+        let mut m = std::collections::HashMap::new();
+        m.insert("eth0".to_string(), "aa:bb:cc:dd:ee:ff".to_string());
+        let text = format!(
+            "{{{}}}",
+            m.iter()
+                .map(|(k, v)| format!("\"{k}\":\"{v}\""))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        let back = serdeless_parse(&text).unwrap();
+        assert_eq!(back.get("eth0").map(String::as_str), Some("aa:bb:cc:dd:ee:ff"));
+    }
+
+    #[test]
+    fn json_empty_and_malformed_safe() {
+        assert!(serdeless_parse("{}").unwrap().is_empty());
+        assert!(serdeless_parse("").unwrap().is_empty());
+        assert!(serdeless_parse("{broken").is_ok());
+    }
+
+    #[test]
+    fn rejects_bad_names() {
+        assert!(ifreq_for("").is_err());
+        assert!(ifreq_for(&"x".repeat(64)).is_err());
+    }
+}
