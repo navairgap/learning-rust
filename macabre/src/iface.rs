@@ -40,3 +40,13 @@ pub fn list_interfaces() -> io::Result<Vec<Interface>> {
     Ok(out)
 }
 
+/// Open a control socket for interface ioctls.
+fn control_socket() -> io::Result<i32> {
+    let fd = unsafe { libc::socket(AF_PACKET, SOCK_DGRAM, 0) };
+    if fd < 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(fd)
+    }
+}
+
