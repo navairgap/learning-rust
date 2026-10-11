@@ -177,3 +177,7 @@ fn root() -> bool {
     unsafe { libc::geteuid() == 0 }
 }
 
+fn fail(msg: &str) -> ExitCode {
+    eprintln!("macabre: {msg}");
+    ExitCode::FAILURE
+}
