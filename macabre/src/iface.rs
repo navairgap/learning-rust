@@ -16,3 +16,10 @@ struct RawSockaddr {
     data: [u8; 14],
 }
 
+/// One network interface and its current MAC address.
+#[derive(Debug, Clone)]
+pub struct Interface {
+    pub name: String,
+    pub mac: MacAddress,
+}
+
