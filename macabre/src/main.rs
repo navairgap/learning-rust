@@ -27,3 +27,29 @@ COMMANDS:
 MAC format: six hex octets separated by colons, e.g. 02:ab:cd:ef:00:11
 ";
 
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let Some(cmd) = args.first().map(String::as_str) else {
+        print!("{USAGE}");
+        return ExitCode::from(2);
+    };
+
+    match cmd {
+        "list" => cmd_list(),
+        "get" => with_iface(&args, cmd_get),
+        "set" => with_mac(&args, cmd_set),
+        "random" => with_iface(&args, cmd_random),
+        "reset" => with_iface(&args, cmd_reset),
+        "original" => with_iface(&args, cmd_original),
+        "-h" | "--help" | "help" => {
+            print!("{USAGE}");
+            ExitCode::SUCCESS
+        }
+        other => {
+            eprintln!("macabre: unknown command {other:?}\n");
+            print!("{USAGE}");
+            ExitCode::from(2)
+        }
+    }
+}
+
