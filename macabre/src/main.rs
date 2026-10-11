@@ -173,3 +173,7 @@ fn original_guard(name: &str) -> std::io::Result<()> {
     }
 }
 
+fn root() -> bool {
+    unsafe { libc::geteuid() == 0 }
+}
+
