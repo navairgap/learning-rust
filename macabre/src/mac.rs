@@ -67,3 +67,22 @@ fn fill_random(buf: &mut [u8]) {
     f.read_exact(buf).expect("read /dev/urandom");
 }
 
+impl FromStr for MacAddress {
+    type Err = ParseMacError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split(':').collect();
+        if parts.len() != 6 {
+            return Err(ParseMacError::BadLength);
+        }
+        let mut octets = [0u8; 6];
+        for (i, part) in parts.iter().enumerate() {
+            if part.len() != 2 {
+                return Err(ParseMacError::BadOctet);
+            }
+            octets[i] = u8::from_str_radix(part, 16).map_err(|_| ParseMacError::BadOctet)?;
+        }
+        Ok(MacAddress(octets))
+    }
+}
+
