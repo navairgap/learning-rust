@@ -110,6 +110,12 @@ fn cmd_set(name: &str, mac: MacAddress) -> ExitCode {
     if !root() {
         return fail("setting a MAC requires root (run with sudo)");
     }
+    if !mac.is_unicast() {
+        return fail("refusing multicast MAC — that would confuse the network");
+    }
+    if !mac.is_locally_administered() {
+        eprintln!("macabre: note: {mac} is not locally administered");
+    }
     if let Err(e) = original_guard(name) {
         return fail(&format!("saving original MAC: {e}"));
     }

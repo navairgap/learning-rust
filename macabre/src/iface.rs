@@ -90,9 +90,7 @@ pub fn set_mac(name: &str, mac: MacAddress) -> io::Result<()> {
     data[..6].copy_from_slice(&octets);
     let raw = RawSockaddr { family: 0, data };
     let sa: sockaddr = unsafe { std::mem::transmute(raw) };
-    unsafe {
-        req.ifr_ifru.ifru_hwaddr = sa;
-    }
+    req.ifr_ifru.ifru_hwaddr = sa;
     let rc = unsafe { ioctl(fd, SIOCSIFHWADDR, &mut req) };
     unsafe { libc::close(fd) };
     if rc < 0 {
