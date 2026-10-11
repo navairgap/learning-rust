@@ -1,0 +1,9 @@
+[package]
+name = "macabre"
+version = "0.1.0"
+edition = "2021"
+description = "your MAC, requiem'd — change and restore interface MAC addresses on Linux"
+license = "MIT"
+
+[dependencies]
+libc = "0.2"
