@@ -60,3 +60,10 @@ impl MacAddress {
     }
 }
 
+/// Fill a buffer with random bytes from the kernel.
+fn fill_random(buf: &mut [u8]) {
+    use std::io::Read;
+    let mut f = std::fs::File::open("/dev/urandom").expect("open /dev/urandom");
+    f.read_exact(buf).expect("read /dev/urandom");
+}
+
