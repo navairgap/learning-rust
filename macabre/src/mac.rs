@@ -25,3 +25,16 @@ impl fmt::Display for ParseMacError {
     }
 }
 
+impl std::error::Error for ParseMacError {}
+
+impl MacAddress {
+    /// Build from raw octets.
+    pub fn from_octets(octets: [u8; 6]) -> Self {
+        MacAddress(octets)
+    }
+
+    /// Raw octets, big-endian wire order.
+    pub fn octets(&self) -> [u8; 6] {
+        self.0
+    }
+
