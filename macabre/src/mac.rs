@@ -38,3 +38,13 @@ impl MacAddress {
         self.0
     }
 
+    /// Second-least-significant bit of the first octet: 1 means locally administered.
+    pub fn is_locally_administered(&self) -> bool {
+        self.0[0] & 0x02 != 0
+    }
+
+    /// Least-significant bit of the first octet: 0 means unicast, 1 means multicast.
+    pub fn is_unicast(&self) -> bool {
+        self.0[0] & 0x01 == 0
+    }
+
