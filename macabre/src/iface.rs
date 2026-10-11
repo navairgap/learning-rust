@@ -23,3 +23,20 @@ pub struct Interface {
     pub mac: MacAddress,
 }
 
+/// All non-loopback interfaces found in /sys/class/net, with their MACs.
+pub fn list_interfaces() -> io::Result<Vec<Interface>> {
+    let mut out = Vec::new();
+    for entry in fs::read_dir("/sys/class/net")? {
+        let entry = entry?;
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name == "lo" {
+            continue;
+        }
+        if let Ok(mac) = get_mac(&name) {
+            out.push(Interface { name, mac });
+        }
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(out)
+}
+
