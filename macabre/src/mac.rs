@@ -48,3 +48,15 @@ impl MacAddress {
         self.0[0] & 0x01 == 0
     }
 
+    /// Generate a random, locally-administered, unicast MAC address.
+    ///
+    /// The two low bits of the first octet are forced to `10` binary, so the
+    /// result is always safe to put on a wire: local, unicast.
+    pub fn random_local() -> Self {
+        let mut octets = [0u8; 6];
+        fill_random(&mut octets);
+        octets[0] = (octets[0] & 0xfc) | 0x02;
+        MacAddress(octets)
+    }
+}
+
