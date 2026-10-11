@@ -106,3 +106,19 @@ fn cmd_get(name: &str) -> ExitCode {
     }
 }
 
+fn cmd_set(name: &str, mac: MacAddress) -> ExitCode {
+    if !root() {
+        return fail("setting a MAC requires root (run with sudo)");
+    }
+    if let Err(e) = original_guard(name) {
+        return fail(&format!("saving original MAC: {e}"));
+    }
+    match iface::set_mac(name, mac) {
+        Ok(()) => {
+            println!("{name}: MAC set to {mac}");
+            ExitCode::SUCCESS
+        }
+        Err(e) => fail(&format!("{name}: {e}")),
+    }
+}
+
