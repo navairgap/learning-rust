@@ -122,3 +122,11 @@ pub fn load_original(name: &str) -> io::Result<Option<MacAddress>> {
     }
 }
 
+/// Remove the saved original MAC for an interface (after a successful reset).
+pub fn clear_original(name: &str) -> io::Result<()> {
+    let path = store_path()?;
+    let mut table = load_table(&path)?;
+    table.remove(name);
+    write_table(&path, &table)
+}
+
