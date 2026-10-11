@@ -66,3 +66,18 @@ fn ifreq_for(name: &str) -> io::Result<ifreq> {
     Ok(req)
 }
 
+/// Read the current MAC address of an interface.
+pub fn get_mac(name: &str) -> io::Result<MacAddress> {
+    let fd = control_socket()?;
+    let mut req = ifreq_for(name)?;
+    let rc = unsafe { ioctl(fd, SIOCGIFHWADDR, &mut req) };
+    unsafe { libc::close(fd) };
+    if rc < 0 {
+        return Err(io::Error::last_os_error());
+    }
+    let raw: RawSockaddr = unsafe { std::mem::transmute(req.ifr_ifru.ifru_hwaddr) };
+    let mut octets = [0u8; 6];
+    octets.copy_from_slice(&raw.data[..6]);
+    Ok(MacAddress::from_octets(octets))
+}
+
