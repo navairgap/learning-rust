@@ -81,3 +81,23 @@ pub fn get_mac(name: &str) -> io::Result<MacAddress> {
     Ok(MacAddress::from_octets(octets))
 }
 
+/// Set the MAC address of an interface. Requires root (or CAP_NET_ADMIN).
+pub fn set_mac(name: &str, mac: MacAddress) -> io::Result<()> {
+    let fd = control_socket()?;
+    let mut req = ifreq_for(name)?;
+    let octets = mac.octets();
+    let mut data = [0u8; 14];
+    data[..6].copy_from_slice(&octets);
+    let raw = RawSockaddr { family: 0, data };
+    let sa: sockaddr = unsafe { std::mem::transmute(raw) };
+    unsafe {
+        req.ifr_ifru.ifru_hwaddr = sa;
+    }
+    let rc = unsafe { ioctl(fd, SIOCSIFHWADDR, &mut req) };
+    unsafe { libc::close(fd) };
+    if rc < 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
+
