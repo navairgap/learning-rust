@@ -49,3 +49,7 @@ each top-level directory is one exercise, ordered roughly by difficulty. read th
 ## Reading macabre
 
 start at `src/main.rs` (what the binary does), then `src/mac.rs` (the address type — pure, fully tested), then `src/iface.rs` (the linux ioctl layer). each module has exactly one responsibility; tests live beside the code they cover.
+
+## Roadmap
+
+next rust projects, in order: a tiny shell (fork/exec/pipes), a bump allocator, a modal text editor. each reuses something macabre taught — ioctls, unsafe discipline, or argument parsing without clap.
