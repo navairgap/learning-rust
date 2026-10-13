@@ -53,3 +53,7 @@ start at `src/main.rs` (what the binary does), then `src/mac.rs` (the address ty
 ## Roadmap
 
 next rust projects, in order: a tiny shell (fork/exec/pipes), a bump allocator, a modal text editor. each reuses something macabre taught — ioctls, unsafe discipline, or argument parsing without clap.
+
+## Unsafe audit
+
+macabre has three `unsafe` blocks: socket creation, ioctl, and the sockaddr transmute. each wraps a libc call with checked returns; no unsafe leaks past the iface boundary.
