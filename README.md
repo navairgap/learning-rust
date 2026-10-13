@@ -57,3 +57,7 @@ next rust projects, in order: a tiny shell (fork/exec/pipes), a bump allocator, 
 ## Unsafe audit
 
 macabre has three `unsafe` blocks: socket creation, ioctl, and the sockaddr transmute. each wraps a libc call with checked returns; no unsafe leaks past the iface boundary.
+
+## Error handling policy
+
+library code returns `io::Result`; only `main` decides exit codes. no panics outside of allocation failure — the store tolerates corrupt files by starting empty.
