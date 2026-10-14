@@ -61,3 +61,7 @@ macabre has three `unsafe` blocks: socket creation, ioctl, and the sockaddr tran
 ## Error handling policy
 
 library code returns `io::Result`; only `main` decides exit codes. no panics outside of allocation failure — the store tolerates corrupt files by starting empty.
+
+## Testing strategy
+
+unit tests live beside the code in `#[cfg(test)]` modules; CI runs build + test + clippy `-D warnings` + rustfmt on every push. the `selftest` subcommand is an end-to-end check a human can run after any change.
