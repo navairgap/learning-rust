@@ -65,3 +65,7 @@ library code returns `io::Result`; only `main` decides exit codes. no panics out
 ## Testing strategy
 
 unit tests live beside the code in `#[cfg(test)]` modules; CI runs build + test + clippy `-D warnings` + rustfmt on every push. the `selftest` subcommand is an end-to-end check a human can run after any change.
+
+## Toolchain
+
+stable rustc only, no nightly features. if stable can't do it yet, the project waits.
