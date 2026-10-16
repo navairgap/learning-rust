@@ -69,3 +69,7 @@ unit tests live beside the code in `#[cfg(test)]` modules; CI runs build + test 
 ## Toolchain
 
 stable rustc only, no nightly features. if stable can't do it yet, the project waits.
+
+## History
+
+rust started as the answer to 'what after python?' — the honest answer turned out to be: the same discipline, with a borrow checker. macabre came first; sentinel-dns proved the pattern scales.
