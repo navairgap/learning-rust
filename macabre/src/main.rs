@@ -35,7 +35,11 @@ fn main() -> ExitCode {
     };
 
     match cmd {
-        "list" => cmd_list(),
+        "list" if args.len() == 1 => cmd_list(),
+        "list" => {
+            eprintln!("macabre: 'list' takes no arguments");
+            ExitCode::from(2)
+        },
         "get" => with_iface(&args, cmd_get),
         "set" => with_mac(&args, cmd_set),
         "random" => with_iface(&args, cmd_random),
@@ -54,6 +58,10 @@ fn main() -> ExitCode {
 }
 
 fn with_iface(args: &[String], f: fn(&str) -> ExitCode) -> ExitCode {
+    if args.len() != 2 {
+        eprintln!("macabre: expected exactly one interface name");
+        return ExitCode::from(2);
+    }
     match args.get(1) {
         Some(name) => f(name),
         None => {
@@ -64,6 +72,10 @@ fn with_iface(args: &[String], f: fn(&str) -> ExitCode) -> ExitCode {
 }
 
 fn with_mac(args: &[String], f: fn(&str, MacAddress) -> ExitCode) -> ExitCode {
+    if args.len() != 3 {
+        eprintln!("macabre: expected an interface name and one MAC address");
+        return ExitCode::from(2);
+    }
     let Some(name) = args.get(1) else {
         eprintln!("macabre: missing interface name");
         return ExitCode::from(2);
