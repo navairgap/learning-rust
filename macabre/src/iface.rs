@@ -68,8 +68,9 @@ fn ifreq_for(name: &str) -> io::Result<ifreq> {
 
 /// Read the current MAC address of an interface.
 pub fn get_mac(name: &str) -> io::Result<MacAddress> {
-    let fd = control_socket()?;
+    // Validate before opening the control socket so invalid input cannot leak an fd.
     let mut req = ifreq_for(name)?;
+    let fd = control_socket()?;
     let rc = unsafe { ioctl(fd, SIOCGIFHWADDR, &mut req) };
     unsafe { libc::close(fd) };
     if rc < 0 {
@@ -83,8 +84,9 @@ pub fn get_mac(name: &str) -> io::Result<MacAddress> {
 
 /// Set the MAC address of an interface. Requires root (or CAP_NET_ADMIN).
 pub fn set_mac(name: &str, mac: MacAddress) -> io::Result<()> {
-    let fd = control_socket()?;
+    // Validate before opening the control socket so invalid input cannot leak an fd.
     let mut req = ifreq_for(name)?;
+    let fd = control_socket()?;
     let octets = mac.octets();
     let mut data = [0u8; 14];
     data[..6].copy_from_slice(&octets);
@@ -215,5 +217,16 @@ mod tests {
     fn rejects_bad_names() {
         assert!(ifreq_for("").is_err());
         assert!(ifreq_for(&"x".repeat(64)).is_err());
+    }
+
+    #[test]
+    fn public_mac_operations_reject_bad_names_before_socket_work() {
+        assert_eq!(get_mac("").unwrap_err().kind(), io::ErrorKind::InvalidInput);
+        assert_eq!(
+            set_mac("", MacAddress::from_octets([2, 0, 0, 0, 0, 1]))
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::InvalidInput
+        );
     }
 }
