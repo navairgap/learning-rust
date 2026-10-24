@@ -214,6 +214,12 @@ mod tests {
     }
 
     #[test]
+    fn accepts_typical_linux_interface_name() {
+        assert!(ifreq_for("wlan0").is_ok());
+        assert!(ifreq_for("enp2s0").is_ok());
+    }
+
+    #[test]
     fn rejects_bad_names() {
         assert!(ifreq_for("").is_err());
         assert!(ifreq_for(&"x".repeat(64)).is_err());
