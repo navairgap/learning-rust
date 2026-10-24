@@ -119,6 +119,14 @@ mod tests {
     }
 
     #[test]
+    fn rejects_whitespace_inside_octets() {
+        assert_eq!(
+            "aa:bb:cc:dd:ee: ff".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
+    }
+
+    #[test]
     fn rejects_bad_hex() {
         assert_eq!(
             "de:ad:be:ef:00:zz".parse::<MacAddress>().unwrap_err(),
