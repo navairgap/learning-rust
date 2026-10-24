@@ -107,6 +107,14 @@ mod tests {
     }
 
     #[test]
+    fn rejects_non_colon_separators() {
+        assert_eq!(
+            "aa-bb-cc-dd-ee-ff".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadLength
+        );
+    }
+
+    #[test]
     fn rejects_wrong_length() {
         assert_eq!(
             "de:ad:be:ef".parse::<MacAddress>().unwrap_err(),
