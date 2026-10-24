@@ -131,6 +131,12 @@ mod tests {
     }
 
     #[test]
+    fn uppercase_input_normalizes_to_lowercase_output() {
+        let mac: MacAddress = "AA:BB:CC:DD:EE:FF".parse().unwrap();
+        assert_eq!(mac.to_string(), "aa:bb:cc:dd:ee:ff");
+    }
+
+    #[test]
     fn display_roundtrips() {
         let mac: MacAddress = "aa:bb:cc:dd:ee:ff".parse().unwrap();
         assert_eq!(mac.to_string(), "aa:bb:cc:dd:ee:ff");
