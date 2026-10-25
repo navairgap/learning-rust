@@ -222,6 +222,23 @@ mod tests {
     }
 
     #[test]
+    fn write_table_creates_missing_parent_directories() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let root = std::env::temp_dir().join(format!("macabre-store-parent-test-{unique}"));
+        let path = root.join("nested/originals.json");
+        let mut table = std::collections::HashMap::new();
+        table.insert("wlan0".to_string(), "02:00:00:00:00:01".to_string());
+
+        write_table(&path, &table).unwrap();
+        let loaded = load_table(&path).unwrap();
+        let _ = fs::remove_dir_all(&root);
+
+        assert_eq!(loaded.get("wlan0").map(String::as_str), Some("02:00:00:00:00:01"));
+    }
+
+    #[test]
     fn store_serialization_is_stable_across_insertion_order() {
         use std::time::{SystemTime, UNIX_EPOCH};
 
