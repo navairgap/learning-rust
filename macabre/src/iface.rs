@@ -208,6 +208,30 @@ mod tests {
     }
 
     #[test]
+    fn store_serialization_is_stable_across_insertion_order() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let base = std::env::temp_dir().join(format!("macabre-store-test-{unique}"));
+        let first_path = base.with_extension("first.json");
+        let second_path = base.with_extension("second.json");
+        let mut first = std::collections::HashMap::new();
+        first.insert("wlan0".to_string(), "02:00:00:00:00:01".to_string());
+        first.insert("enp2s0".to_string(), "02:00:00:00:00:02".to_string());
+        let mut second = std::collections::HashMap::new();
+        second.insert("enp2s0".to_string(), "02:00:00:00:00:02".to_string());
+        second.insert("wlan0".to_string(), "02:00:00:00:00:01".to_string());
+
+        write_table(&first_path, &first).unwrap();
+        write_table(&second_path, &second).unwrap();
+        let first_text = fs::read_to_string(&first_path).unwrap();
+        let second_text = fs::read_to_string(&second_path).unwrap();
+        let _ = fs::remove_file(&first_path);
+        let _ = fs::remove_file(&second_path);
+        assert_eq!(first_text, second_text);
+    }
+
+    #[test]
     fn json_empty_and_malformed_safe() {
         assert!(serdeless_parse("{}").unwrap().is_empty());
         assert!(serdeless_parse("").unwrap().is_empty());
