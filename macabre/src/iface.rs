@@ -177,10 +177,11 @@ fn write_table(
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let body: Vec<String> = table
+    let mut body: Vec<String> = table
         .iter()
         .map(|(k, v)| format!("\"{k}\":\"{v}\""))
         .collect();
+    body.sort_unstable();
     fs::write(path, format!("{{{}}}", body.join(",")))
 }
 
