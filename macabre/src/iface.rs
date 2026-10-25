@@ -260,6 +260,15 @@ mod tests {
     }
 
     #[test]
+    fn parses_multiple_original_mac_entries() {
+        let table = serdeless_parse(
+            "{\"wlan0\":\"02:00:00:00:00:01\",\"enp2s0\":\"02:00:00:00:00:02\"}"
+        ).unwrap();
+        assert_eq!(table.get("wlan0").map(String::as_str), Some("02:00:00:00:00:01"));
+        assert_eq!(table.get("enp2s0").map(String::as_str), Some("02:00:00:00:00:02"));
+    }
+
+    #[test]
     fn accepts_typical_linux_interface_name() {
         assert!(ifreq_for("wlan0").is_ok());
         assert!(ifreq_for("enp2s0").is_ok());
