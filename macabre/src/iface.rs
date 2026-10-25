@@ -151,21 +151,35 @@ fn load_table(path: &std::path::Path) -> io::Result<std::collections::HashMap<St
 /// Minimal JSON object reader: {"name":"aa:bb:..."} — enough for this store.
 fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, String>> {
     let mut map = std::collections::HashMap::new();
-    let trimmed = text
-        .trim()
-        .trim_start_matches('{')
-        .trim_end_matches('}')
-        .trim();
+    let trimmed = text.trim();
     if trimmed.is_empty() {
         return Ok(map);
     }
-    for pair in trimmed.split(',') {
+    if !trimmed.starts_with('{') || !trimmed.ends_with('}') {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "malformed original MAC store",
+        ));
+    }
+    let inner = trimmed[1..trimmed.len() - 1].trim();
+    if inner.is_empty() {
+        return Ok(map);
+    }
+    for pair in inner.split(',') {
         let mut kv = pair.splitn(2, ':');
-        let k = kv.next().unwrap_or("").trim().trim_matches('"');
-        let v = kv.next().unwrap_or("").trim().trim_matches('"');
-        if !k.is_empty() {
-            map.insert(k.to_string(), v.to_string());
+        let key = kv.next().unwrap_or("").trim();
+        let value = kv.next().ok_or_else(|| {
+            io::Error::new(io::ErrorKind::InvalidData, "malformed original MAC store entry")
+        })?.trim();
+        let key = key.strip_prefix('"').and_then(|s| s.strip_suffix('"')).unwrap_or("");
+        let value = value.strip_prefix('"').and_then(|s| s.strip_suffix('"')).unwrap_or("");
+        if key.is_empty() || value.parse::<MacAddress>().is_err() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "invalid original MAC store entry",
+            ));
         }
+        map.insert(key.to_string(), value.to_string());
     }
     Ok(map)
 }
@@ -235,7 +249,14 @@ mod tests {
     fn json_empty_and_malformed_safe() {
         assert!(serdeless_parse("{}").unwrap().is_empty());
         assert!(serdeless_parse("").unwrap().is_empty());
-        assert!(serdeless_parse("{broken").is_ok());
+        assert_eq!(
+            serdeless_parse("{broken").unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
+        assert_eq!(
+            serdeless_parse("{\"eth0\":\"not-a-mac\"}").unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
     }
 
     #[test]
