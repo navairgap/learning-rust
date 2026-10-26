@@ -232,6 +232,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn missing_original_store_is_treated_as_empty() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let path = std::env::temp_dir().join(format!("macabre-missing-store-{unique}.json"));
+        assert!(!path.exists());
+        assert!(load_table(&path).unwrap().is_empty());
+    }
+
+    #[test]
     fn json_roundtrip() {
         let mut m = std::collections::HashMap::new();
         m.insert("eth0".to_string(), "aa:bb:cc:dd:ee:ff".to_string());
