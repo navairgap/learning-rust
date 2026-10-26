@@ -2,7 +2,7 @@
 
 use std::ffi::{c_char, OsStr};
 use std::fs;
-use std::io;
+use std::io::{self, Write};
 use std::os::unix::ffi::OsStrExt;
 
 use libc::{ifreq, ioctl, sockaddr, AF_PACKET, SIOCGIFHWADDR, SIOCSIFHWADDR, SOCK_DGRAM};
@@ -188,6 +188,8 @@ fn write_table(
     path: &std::path::Path,
     table: &std::collections::HashMap<String, String>,
 ) -> io::Result<()> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -196,7 +198,33 @@ fn write_table(
         .map(|(k, v)| format!("\"{k}\":\"{v}\""))
         .collect();
     body.sort_unstable();
-    fs::write(path, format!("{{{}}}", body.join(",")))
+    let payload = format!("{{{}}}", body.join(","));
+    let file_name = path.file_name().unwrap_or_default().to_string_lossy();
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let tmp_path = path.with_file_name(format!(
+        ".{file_name}.{}.{}.tmp",
+        std::process::id(),
+        nonce,
+    ));
+    let mut created = false;
+    let result: io::Result<()> = (|| {
+        let mut temp = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&tmp_path)?;
+        created = true;
+        temp.write_all(payload.as_bytes())?;
+        temp.sync_all()?;
+        fs::rename(&tmp_path, path)?;
+        Ok(())
+    })();
+    if result.is_err() && created {
+        let _ = fs::remove_file(&tmp_path);
+    }
+    result
 }
 
 #[cfg(test)]
