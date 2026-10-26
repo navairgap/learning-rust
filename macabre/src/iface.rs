@@ -267,6 +267,30 @@ mod tests {
     }
 
     #[test]
+    fn write_table_replaces_store_without_leaving_temp_files() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let root = std::env::temp_dir().join(format!("macabre-atomic-store-{unique}"));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("originals.json");
+        let mut first = std::collections::HashMap::new();
+        first.insert("wlan0".to_string(), "02:00:00:00:00:01".to_string());
+        write_table(&path, &first).unwrap();
+
+        let mut second = std::collections::HashMap::new();
+        second.insert("enp2s0".to_string(), "02:00:00:00:00:02".to_string());
+        write_table(&path, &second).unwrap();
+
+        let loaded = load_table(&path).unwrap();
+        let entries: Vec<_> = fs::read_dir(&root).unwrap().collect();
+        let _ = fs::remove_dir_all(&root);
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded.get("enp2s0").map(String::as_str), Some("02:00:00:00:00:02"));
+        assert_eq!(entries.len(), 1);
+    }
+
+    #[test]
     fn store_serialization_is_stable_across_insertion_order() {
         use std::time::{SystemTime, UNIX_EPOCH};
 
