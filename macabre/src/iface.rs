@@ -347,6 +347,10 @@ mod tests {
     fn rejects_bad_names() {
         assert!(ifreq_for("").is_err());
         assert!(ifreq_for(&"x".repeat(64)).is_err());
+        assert_eq!(
+            ifreq_for("wlan0\\0eth0").unwrap_err().kind(),
+            io::ErrorKind::InvalidInput
+        );
     }
 
     #[test]
