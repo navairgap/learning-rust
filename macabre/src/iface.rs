@@ -179,6 +179,12 @@ fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, S
                 "invalid original MAC store entry",
             ));
         }
+        if map.contains_key(key) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "duplicate interface in original MAC store",
+            ));
+        }
         map.insert(key.to_string(), value.to_string());
     }
     Ok(map)
@@ -334,6 +340,15 @@ mod tests {
         );
         assert_eq!(
             serdeless_parse("{\"eth0\":\"not-a-mac\"}").unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
+    }
+
+    #[test]
+    fn duplicate_interface_entries_are_rejected() {
+        let text = "{\"eth0\":\"02:00:00:00:00:01\",\"eth0\":\"02:00:00:00:00:02\"}";
+        assert_eq!(
+            serdeless_parse(text).unwrap_err().kind(),
             io::ErrorKind::InvalidData
         );
     }
