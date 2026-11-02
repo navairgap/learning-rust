@@ -72,10 +72,13 @@ pub fn get_mac(name: &str) -> io::Result<MacAddress> {
     let mut req = ifreq_for(name)?;
     let fd = control_socket()?;
     let rc = unsafe { ioctl(fd, SIOCGIFHWADDR, &mut req) };
+    let result = if rc < 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    };
     unsafe { libc::close(fd) };
-    if rc < 0 {
-        return Err(io::Error::last_os_error());
-    }
+    result?;
     let raw: RawSockaddr = unsafe { std::mem::transmute(req.ifr_ifru.ifru_hwaddr) };
     let mut octets = [0u8; 6];
     octets.copy_from_slice(&raw.data[..6]);
@@ -94,10 +97,13 @@ pub fn set_mac(name: &str, mac: MacAddress) -> io::Result<()> {
     let sa: sockaddr = unsafe { std::mem::transmute(raw) };
     req.ifr_ifru.ifru_hwaddr = sa;
     let rc = unsafe { ioctl(fd, SIOCSIFHWADDR, &mut req) };
+    let result = if rc < 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    };
     unsafe { libc::close(fd) };
-    if rc < 0 {
-        return Err(io::Error::last_os_error());
-    }
+    result?;
     Ok(())
 }
 
