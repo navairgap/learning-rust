@@ -41,3 +41,17 @@ fn set_requires_both_interface_and_mac_before_system_operations() {
     assert_eq!(output.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&output.stderr).contains("interface name and one MAC"));
 }
+
+#[test]
+fn invalid_mac_is_rejected_before_interface_or_privilege_checks() {
+    let output = macabre()
+        .args(["set", "missing-interface", "not-a-mac"])
+        .output()
+        .expect("run macabre");
+
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("bad MAC"), "unexpected stderr: {stderr}");
+    assert!(!stderr.contains("requires root"), "MAC parsing must happen first");
+}
+
