@@ -375,6 +375,17 @@ mod tests {
     }
 
     #[test]
+    fn interface_name_length_uses_the_exact_ifreq_boundary() {
+        let maximum = "x".repeat(libc::IFNAMSIZ - 1);
+        let too_long = "x".repeat(libc::IFNAMSIZ);
+        assert!(ifreq_for(&maximum).is_ok());
+        assert_eq!(
+            ifreq_for(&too_long).unwrap_err().kind(),
+            io::ErrorKind::InvalidInput
+        );
+    }
+
+    #[test]
     fn rejects_bad_names() {
         assert!(ifreq_for("").is_err());
         assert!(ifreq_for(&"x".repeat(64)).is_err());
