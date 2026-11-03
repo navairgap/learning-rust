@@ -119,9 +119,6 @@ fn cmd_get(name: &str) -> ExitCode {
 }
 
 fn cmd_set(name: &str, mac: MacAddress) -> ExitCode {
-    if !root() {
-        return fail("setting a MAC requires root (run with sudo)");
-    }
     if !mac.is_unicast() {
         return fail("refusing multicast MAC — that would confuse the network");
     }
@@ -147,9 +144,6 @@ fn cmd_random(name: &str) -> ExitCode {
 }
 
 fn cmd_reset(name: &str) -> ExitCode {
-    if !root() {
-        return fail("resetting a MAC requires root (run with sudo)");
-    }
     match iface::load_original(name) {
         Err(e) => fail(&format!("reading saved MAC: {e}")),
         Ok(None) => fail(&format!("{name}: no saved original MAC — nothing to reset")),
@@ -189,10 +183,6 @@ fn original_guard(name: &str) -> std::io::Result<()> {
             iface::save_original(name, current)
         }
     }
-}
-
-fn root() -> bool {
-    unsafe { libc::geteuid() == 0 }
 }
 
 fn fail(msg: &str) -> ExitCode {
