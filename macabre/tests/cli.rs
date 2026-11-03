@@ -55,3 +55,25 @@ fn invalid_mac_is_rejected_before_interface_or_privilege_checks() {
     assert!(!stderr.contains("requires root"), "MAC parsing must happen first");
 }
 
+
+#[test]
+fn random_does_not_print_a_mac_when_interface_validation_fails() {
+    let output = macabre()
+        .args(["random", ""])
+        .output()
+        .expect("run macabre");
+
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty(), "must not announce an unapplied address");
+}
+
+#[test]
+fn valid_mac_attempt_is_not_rejected_by_an_euid_only_root_gate() {
+    let output = macabre()
+        .args(["set", "missing-interface-for-test", "02:00:00:00:00:01"])
+        .output()
+        .expect("run macabre");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stderr.contains("requires root"), "capability-aware ioctl path should decide access");
+}
