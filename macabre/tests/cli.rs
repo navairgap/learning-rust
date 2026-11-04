@@ -68,6 +68,19 @@ fn random_does_not_print_a_mac_when_interface_validation_fails() {
 }
 
 #[test]
+fn multicast_mac_is_rejected_before_interface_operations() {
+    let output = macabre()
+        .args(["set", "missing-interface-for-test", "01:00:00:00:00:01"])
+        .output()
+        .expect("run macabre");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("refusing multicast MAC"), "unexpected stderr: {stderr}");
+    assert!(!stderr.contains("missing-interface"), "interface lookup should not run");
+}
+
+#[test]
 fn valid_mac_attempt_is_not_rejected_by_an_euid_only_root_gate() {
     let output = macabre()
         .args(["set", "missing-interface-for-test", "02:00:00:00:00:01"])
