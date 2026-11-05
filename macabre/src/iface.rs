@@ -405,4 +405,18 @@ mod tests {
             io::ErrorKind::InvalidInput
         );
     }
+    #[test]
+    fn control_socket_owns_and_closes_its_descriptor() {
+        use std::os::fd::AsRawFd;
+
+        let socket = control_socket().expect("control socket should open");
+        let raw = socket.as_raw_fd();
+        assert!(unsafe { libc::fcntl(raw, libc::F_GETFD) } >= 0);
+
+        drop(socket);
+
+        assert_eq!(unsafe { libc::fcntl(raw, libc::F_GETFD) }, -1);
+        assert_eq!(io::Error::last_os_error().raw_os_error(), Some(libc::EBADF));
+    }
+
 }
