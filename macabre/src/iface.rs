@@ -3,6 +3,7 @@
 use std::ffi::{c_char, OsStr};
 use std::fs;
 use std::io::{self, Write};
+use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::os::unix::ffi::OsStrExt;
 
 use libc::{ifreq, ioctl, sockaddr, AF_PACKET, SIOCGIFHWADDR, SIOCSIFHWADDR, SOCK_DGRAM};
@@ -41,12 +42,13 @@ pub fn list_interfaces() -> io::Result<Vec<Interface>> {
 }
 
 /// Open a control socket for interface ioctls.
-fn control_socket() -> io::Result<i32> {
+fn control_socket() -> io::Result<OwnedFd> {
     let fd = unsafe { libc::socket(AF_PACKET, SOCK_DGRAM, 0) };
     if fd < 0 {
         Err(io::Error::last_os_error())
     } else {
-        Ok(fd)
+        // OwnedFd closes the descriptor on every return path, including ioctl errors.
+        Ok(unsafe { OwnedFd::from_raw_fd(fd) })
     }
 }
 
@@ -71,13 +73,12 @@ pub fn get_mac(name: &str) -> io::Result<MacAddress> {
     // Validate before opening the control socket so invalid input cannot leak an fd.
     let mut req = ifreq_for(name)?;
     let fd = control_socket()?;
-    let rc = unsafe { ioctl(fd, SIOCGIFHWADDR, &mut req) };
+    let rc = unsafe { ioctl(fd.as_raw_fd(), SIOCGIFHWADDR, &mut req) };
     let result = if rc < 0 {
         Err(io::Error::last_os_error())
     } else {
         Ok(())
     };
-    unsafe { libc::close(fd) };
     result?;
     let raw: RawSockaddr = unsafe { std::mem::transmute(req.ifr_ifru.ifru_hwaddr) };
     let mut octets = [0u8; 6];
@@ -96,13 +97,12 @@ pub fn set_mac(name: &str, mac: MacAddress) -> io::Result<()> {
     let raw = RawSockaddr { family: 0, data };
     let sa: sockaddr = unsafe { std::mem::transmute(raw) };
     req.ifr_ifru.ifru_hwaddr = sa;
-    let rc = unsafe { ioctl(fd, SIOCSIFHWADDR, &mut req) };
+    let rc = unsafe { ioctl(fd.as_raw_fd(), SIOCSIFHWADDR, &mut req) };
     let result = if rc < 0 {
         Err(io::Error::last_os_error())
     } else {
         Ok(())
     };
-    unsafe { libc::close(fd) };
     result?;
     Ok(())
 }
