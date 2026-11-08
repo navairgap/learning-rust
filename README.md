@@ -2,7 +2,7 @@
 
 Rust exercises and mini-projects from my learning journey
 
-> 🚧 **Status: planning** — architecture and README first, code next.
+> 🚧 **Status: active exercises** — the repository includes the `macabre` Linux CLI and its tested modules; additional exercises are planned.
 
 ## Why
 
@@ -27,16 +27,6 @@ Slow is smooth: each concept gets its own branch and a real mini-project.
 
 MIT, see [LICENSE](LICENSE).
 
----
-maintained · verified 2026-09-30
----
-maintained · verified 2026-10-01
----
-maintained · verified 2026-10-02
-
-## How to use this repo
-
-each top-level directory is one exercise, ordered roughly by difficulty. read the `README.md` inside each, implement it, then compare with the reference in `solutions/`. resist the urge to peek first — the compiler is a better teacher than the answer key.
 
 ## How to use this repo
 
@@ -73,8 +63,3 @@ stable rustc only, no nightly features. if stable can't do it yet, the project w
 ## History
 
 rust started as the answer to 'what after python?' — the honest answer turned out to be: the same discipline, with a borrow checker. macabre came first; sentinel-dns proved the pattern scales.
-
-
-## Maintenance notes
-
-Prefer explicit error handling for expected user mistakes instead of panics. Test CLI behavior with temporary files, invalid arguments, missing files, Unicode, and large input. Keep formatting, lint, and test checks easy to run locally.
