@@ -28,7 +28,10 @@ fn selftest_passes_unprivileged() {
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
     for section in ["entropy", "interfaces", "store"] {
-        assert!(stdout.contains(section), "missing selftest section: {section}");
+        assert!(
+            stdout.contains(section),
+            "missing selftest section: {section}"
+        );
     }
     assert!(stdout.contains("selftest passed"));
 }
@@ -37,11 +40,7 @@ fn selftest_passes_unprivileged() {
 fn version_flag_prints_the_crate_version() {
     let expected = format!("macabre {}", env!("CARGO_PKG_VERSION"));
 
-    for args in [
-        vec!["--version"],
-        vec!["-V"],
-        vec!["version"],
-    ] {
+    for args in [vec!["--version"], vec!["-V"], vec!["version"]] {
         let output = macabre().args(args).output().expect("run macabre");
 
         assert!(output.status.success());
@@ -70,7 +69,10 @@ fn no_arguments_prints_usage_to_stdout_and_exits_2() {
 
     assert_eq!(output.status.code(), Some(2));
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("USAGE:"), "usage goes to stdout for a tty user");
+    assert!(
+        stdout.contains("USAGE:"),
+        "usage goes to stdout for a tty user"
+    );
     assert!(output.stderr.is_empty());
 }
 

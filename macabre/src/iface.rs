@@ -116,7 +116,7 @@ fn hwaddr_sockaddr(mac: MacAddress) -> sockaddr {
     let mut data = [0u8; 14];
     data[..6].copy_from_slice(&octets);
     let raw = RawSockaddr {
-        family: libc::ARPHRD_ETHER as u16,
+        family: libc::ARPHRD_ETHER,
         data,
     };
     unsafe { std::mem::transmute(raw) }
@@ -612,10 +612,7 @@ mod tests {
         use std::ffi::OsStr;
         use std::os::unix::ffi::OsStrExt;
 
-        assert_eq!(
-            entry_name(OsStr::new("wlan0")),
-            Some("wlan0".to_string())
-        );
+        assert_eq!(entry_name(OsStr::new("wlan0")), Some("wlan0".to_string()));
         // 0x80 alone is invalid UTF-8; a lossy conversion would query a
         // replacement-character name that the kernel does not know.
         let invalid = OsStr::from_bytes(b"\x80bad");
@@ -624,7 +621,9 @@ mod tests {
 
     #[test]
     fn hwaddr_sockaddr_carries_ether_family_and_octets() {
-        let sa = hwaddr_sockaddr(MacAddress::from_octets([0x02, 0xab, 0xcd, 0xef, 0x00, 0x11]));
+        let sa = hwaddr_sockaddr(MacAddress::from_octets([
+            0x02, 0xab, 0xcd, 0xef, 0x00, 0x11,
+        ]));
         assert_eq!(sa.sa_family, libc::ARPHRD_ETHER as libc::sa_family_t);
         let raw: RawSockaddr = unsafe { std::mem::transmute(sa) };
         assert_eq!(&raw.data[..6], &[0x02, 0xab, 0xcd, 0xef, 0x00, 0x11]);
