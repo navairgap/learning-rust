@@ -157,16 +157,25 @@ fn cmd_reset(name: &str) -> ExitCode {
     match iface::load_original(name) {
         Err(e) => fail(&format!("reading saved MAC: {e}")),
         Ok(None) => fail(&format!("{name}: no saved original MAC — nothing to reset")),
-        Ok(Some(mac)) => match iface::set_mac(name, mac) {
-            Ok(()) => match iface::clear_original(name) {
-                Ok(()) => {
-                    println!("{name}: restored to {mac}");
-                    ExitCode::SUCCESS
-                }
-                Err(e) => fail(&format!("restored, but clearing the store failed: {e}")),
-            },
-            Err(e) => fail(&format!("{name}: {e}")),
-        },
+        Ok(Some(mac)) => {
+            // The store validates hex syntax, not safety; a tampered entry
+            // must not let us put a multicast address on the wire.
+            if !mac.is_unicast() {
+                return fail(&format!(
+                    "{name}: refusing multicast saved MAC {mac} — store entry is corrupt"
+                ));
+            }
+            match iface::set_mac(name, mac) {
+                Ok(()) => match iface::clear_original(name) {
+                    Ok(()) => {
+                        println!("{name}: restored to {mac}");
+                        ExitCode::SUCCESS
+                    }
+                    Err(e) => fail(&format!("restored, but clearing the store failed: {e}")),
+                },
+                Err(e) => fail(&format!("{name}: {e}")),
+            }
+        }
     }
 }
 
