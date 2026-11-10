@@ -52,19 +52,22 @@ impl MacAddress {
     ///
     /// The two low bits of the first octet are forced to `10` binary, so the
     /// result is always safe to put on a wire: local, unicast.
-    pub fn random_local() -> Self {
+    ///
+    /// Falls back to an error (instead of panicking) when the entropy source
+    /// cannot be read.
+    pub fn random_local() -> std::io::Result<Self> {
         let mut octets = [0u8; 6];
-        fill_random(&mut octets);
+        fill_random(&mut octets)?;
         octets[0] = (octets[0] & 0xfc) | 0x02;
-        MacAddress(octets)
+        Ok(MacAddress(octets))
     }
 }
 
 /// Fill a buffer with random bytes from the kernel.
-fn fill_random(buf: &mut [u8]) {
+fn fill_random(buf: &mut [u8]) -> std::io::Result<()> {
     use std::io::Read;
-    let mut f = std::fs::File::open("/dev/urandom").expect("open /dev/urandom");
-    f.read_exact(buf).expect("read /dev/urandom");
+    let mut f = std::fs::File::open("/dev/urandom")?;
+    f.read_exact(buf)
 }
 
 impl FromStr for MacAddress {
@@ -179,7 +182,7 @@ mod tests {
     #[test]
     fn random_is_local_and_unicast() {
         for _ in 0..64 {
-            let mac = MacAddress::random_local();
+            let mac = MacAddress::random_local().expect("entropy source available in tests");
             assert!(mac.is_locally_administered());
             assert!(mac.is_unicast());
         }
