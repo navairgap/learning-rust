@@ -1,65 +1,40 @@
 # learning-rust
 
-Rust exercises and mini-projects from my learning journey
+Rust exercises and mini-projects, built one concept at a time.
 
-> 🚧 **Status: active exercises** — the repository includes the `macabre` Linux CLI and its tested modules; additional exercises are planned.
+## Purpose
 
-## Why
+A public record of learning Rust: small tools, the mistakes made along the way, and the habits that stuck. Each project focuses on a specific area of the language and the surrounding systems discipline — ownership, unsafe boundaries, error handling, testing.
 
-Learning Rust in public: exercises, small tools, and the mistakes that taught me. From ownership battles to async runtime internals, tracked commit by commit.
+## Projects
 
-## Planned features
+| Project | Description | Focus |
+|---|---|---|
+| [macabre](macabre/) | Change and restore network interface MAC addresses on Linux | ioctls, `unsafe` discipline, a zero-dependency JSON store, argument parsing without clap |
 
-- Rustlings-style exercises with my annotated solutions
-- Mini-projects: CLI tool, web server, a parser combinator
-- Notes on ownership, lifetimes, traits — the hard parts
-- A public learning log in the README
-
-## Stack
-
-`rust` `cargo`
-
-## Notes
-
-Slow is smooth: each concept gets its own branch and a real mini-project.
-
-## License
-
-MIT, see [LICENSE](LICENSE).
-
-
-## How to use this repo
-
-each top-level directory is one exercise, ordered roughly by difficulty. read the `README.md` inside each, implement it, then compare with the reference in `solutions/`. resist the urge to peek first — the compiler is a better teacher than the answer key.
-
-## projects
-
-- **macabre** — change and restore interface MAC addresses on Linux (ioctls, zero-dep JSON store, tested). see [macabre/](macabre/).
+Each project's README covers usage, design, and testing.
 
 ## Reading macabre
 
-start at `src/main.rs` (what the binary does), then `src/mac.rs` (the address type — pure, fully tested), then `src/iface.rs` (the linux ioctl layer). each module has exactly one responsibility; tests live beside the code they cover.
+Start with `src/main.rs` (the binary and its exit-code policy), then `src/mac.rs` (the address type — pure and fully tested), then `src/iface.rs` (the Linux ioctl layer). Each module has one responsibility, and tests live next to the code they cover.
+
+## Conventions
+
+- **Testing** — unit tests live in `#[cfg(test)]` modules beside the code; CLI contract tests live in `tests/`. CI runs `cargo build`, `cargo test`, `cargo clippy -D warnings`, and `cargo fmt --check` on every push.
+- **Error handling** — library code returns `io::Result`; only `main` assigns exit codes (2 for usage errors, 1 for runtime failures). No panics on expected failure paths.
+- **Unsafe** — macabre has five `unsafe` blocks (socket creation, two ioctls, two sockaddr transmutes). Each wraps a libc call with a checked return value; no `unsafe` construct leaks past the `iface` module boundary.
+- **Toolchain** — stable Rust only. No nightly features.
 
 ## Roadmap
 
-next rust projects, in order: a tiny shell (fork/exec/pipes), a bump allocator, a modal text editor. each reuses something macabre taught — ioctls, unsafe discipline, or argument parsing without clap.
+Planned next projects, in order:
 
-## Unsafe audit
+1. A small shell (fork/exec/pipes)
+2. A bump allocator
+3. A modal text editor
 
-macabre has five `unsafe` blocks: socket creation, two ioctls, and the two sockaddr transmutes. each wraps a libc call with checked returns; no unsafe leaks past the iface boundary.
+Each reuses something macabre introduced: ioctls, unsafe discipline, or dependency-free parsing.
 
-## Error handling policy
+## License
 
-library code returns `io::Result`; only `main` decides exit codes. no panics — even the entropy source failure is a normal error. the store tolerates corrupt files by starting empty.
-
-## Testing strategy
-
-unit tests live beside the code in `#[cfg(test)]` modules plus a CLI contract suite in `tests/`; CI runs build + test + clippy + rustfmt on every push. the `selftest` subcommand is an end-to-end check a human can run after any change.
-
-## Toolchain
-
-stable rustc only, no nightly features. if stable can't do it yet, the project waits.
-
-## History
-
-rust started as the answer to 'what after python?' — the honest answer turned out to be: the same discipline, with a borrow checker. macabre came first; sentinel-dns proved the pattern scales.
+MIT — see [LICENSE](LICENSE).
