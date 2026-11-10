@@ -323,6 +323,15 @@ fn write_table(
     if result.is_err() && created {
         let _ = fs::remove_file(&tmp_path);
     }
+    // Persist the rename itself: without a directory fsync the new store
+    // content can vanish again after a crash even though fsync(file) passed.
+    if result.is_ok() {
+        if let Some(parent) = path.parent() {
+            if let Ok(dir) = fs::File::open(parent) {
+                let _ = dir.sync_all();
+            }
+        }
+    }
     result
 }
 
