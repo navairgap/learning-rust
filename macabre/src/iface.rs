@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::os::unix::ffi::OsStrExt;
 
-use libc::{ifreq, ioctl, sockaddr, AF_PACKET, SIOCGIFHWADDR, SIOCSIFHWADDR, SOCK_DGRAM};
+use libc::{ifreq, ioctl, sockaddr, SIOCGIFHWADDR, SIOCSIFHWADDR, SOCK_DGRAM};
 
 use crate::mac::MacAddress;
 
@@ -42,8 +42,13 @@ pub fn list_interfaces() -> io::Result<Vec<Interface>> {
 }
 
 /// Open a control socket for interface ioctls.
+///
+/// `SOCK_DGRAM/AF_INET` is enough for `SIOCGIFHWADDR`/`SIOCSIFHWADDR`: those
+/// ioctls are dispatched by the network layer regardless of socket family.
+/// `AF_PACKET` would additionally require CAP_NET_RAW just to create the
+/// socket, locking unprivileged `list`/`get` out entirely.
 fn control_socket() -> io::Result<OwnedFd> {
-    let fd = unsafe { libc::socket(AF_PACKET, SOCK_DGRAM, 0) };
+    let fd = unsafe { libc::socket(libc::AF_INET, SOCK_DGRAM, 0) };
     if fd < 0 {
         Err(io::Error::last_os_error())
     } else {
@@ -444,14 +449,9 @@ mod tests {
     fn control_socket_owns_and_closes_its_descriptor() {
         use std::os::fd::AsRawFd;
 
-        let socket = match control_socket() {
-            Ok(socket) => socket,
-            Err(error) if error.kind() == io::ErrorKind::PermissionDenied => {
-                eprintln!("skipping packet-socket ownership check without CAP_NET_RAW");
-                return;
-            }
-            Err(error) => panic!("control socket failed unexpectedly: {error}"),
-        };
+        // AF_INET/SOCK_DGRAM needs no privilege, so creation must succeed unprivileged.
+        let socket = control_socket()
+            .unwrap_or_else(|error| panic!("control socket failed unexpectedly: {error}"));
         let raw = socket.as_raw_fd();
         assert!(unsafe { libc::fcntl(raw, libc::F_GETFD) } >= 0);
 
