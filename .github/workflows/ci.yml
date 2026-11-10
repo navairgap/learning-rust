@@ -18,17 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
       - name: build
         run: cargo build --verbose
       - name: test
         run: cargo test --verbose
       - name: clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
       - name: format
-        run: cargo fmt
-      - name: upload formatted sources
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fmt-result
-          path: macabre/src/
+        run: cargo fmt --check
