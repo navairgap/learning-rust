@@ -88,14 +88,8 @@ fn with_mac(args: &[String], f: fn(&str, MacAddress) -> ExitCode) -> ExitCode {
         eprintln!("macabre: expected an interface name and one MAC address");
         return ExitCode::from(2);
     }
-    let Some(name) = args.get(1) else {
-        eprintln!("macabre: missing interface name");
-        return ExitCode::from(2);
-    };
-    let Some(mac_str) = args.get(2) else {
-        eprintln!("macabre: missing MAC address");
-        return ExitCode::from(2);
-    };
+    let name = &args[1];
+    let mac_str = &args[2];
     match mac_str.parse::<MacAddress>() {
         Ok(mac) => f(name, mac),
         Err(e) => {
