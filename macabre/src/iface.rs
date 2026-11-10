@@ -24,12 +24,23 @@ pub struct Interface {
     pub mac: MacAddress,
 }
 
+/// Interface name from a directory entry, if it is valid UTF-8.
+///
+/// An interface name is never shown to the kernel mangled: entries whose
+/// names are not valid UTF-8 are skipped rather than lossy-replaced, which
+/// would query an interface that does not exist.
+fn entry_name(file_name: &std::ffi::OsStr) -> Option<String> {
+    file_name.to_str().map(str::to_string)
+}
+
 /// All non-loopback interfaces found in /sys/class/net, with their MACs.
 pub fn list_interfaces() -> io::Result<Vec<Interface>> {
     let mut out = Vec::new();
     for entry in fs::read_dir("/sys/class/net")? {
         let entry = entry?;
-        let name = entry.file_name().to_string_lossy().into_owned();
+        let Some(name) = entry_name(&entry.file_name()) else {
+            continue;
+        };
         if name == "lo" {
             continue;
         }
@@ -453,6 +464,21 @@ mod tests {
             io::ErrorKind::InvalidInput
         );
     }
+    #[test]
+    fn non_utf8_interface_names_are_skipped_not_mangled() {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+
+        assert_eq!(
+            entry_name(OsStr::new("wlan0")),
+            Some("wlan0".to_string())
+        );
+        // 0x80 alone is invalid UTF-8; a lossy conversion would query a
+        // replacement-character name that the kernel does not know.
+        let invalid = OsStr::from_bytes(b"\x80bad");
+        assert_eq!(entry_name(invalid), None);
+    }
+
     #[test]
     fn hwaddr_sockaddr_carries_ether_family_and_octets() {
         let sa = hwaddr_sockaddr(MacAddress::from_octets([0x02, 0xab, 0xcd, 0xef, 0x00, 0x11]));
