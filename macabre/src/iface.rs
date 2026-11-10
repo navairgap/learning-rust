@@ -274,7 +274,7 @@ fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, S
                 "invalid original MAC store entry",
             ));
         }
-        if map.contains_key(key) {
+        if map.contains_key(&key) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "duplicate interface in original MAC store",
