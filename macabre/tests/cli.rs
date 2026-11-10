@@ -65,6 +65,24 @@ fn unknown_command_returns_usage_error() {
 }
 
 #[test]
+fn no_arguments_prints_usage_to_stdout_and_exits_2() {
+    let output = macabre().output().expect("run macabre");
+
+    assert_eq!(output.status.code(), Some(2));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("USAGE:"), "usage goes to stdout for a tty user");
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn help_subcommand_is_also_successful() {
+    let output = macabre().arg("help").output().expect("run macabre");
+
+    assert!(output.status.success());
+    assert!(String::from_utf8_lossy(&output.stdout).contains("USAGE:"));
+}
+
+#[test]
 fn interface_commands_require_exactly_one_argument() {
     for args in [vec!["get"], vec!["get", "wlan0", "extra"], vec!["reset"]] {
         let output = macabre().args(args).output().expect("run macabre");
