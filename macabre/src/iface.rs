@@ -212,21 +212,26 @@ fn escape_key(s: &str) -> String {
     out
 }
 
-/// Undo [`escape_key`]. Returns None on a dangling or unknown escape.
-fn unescape_key(s: &str) -> Option<String> {
-    let mut out = String::with_capacity(s.len());
-    let mut chars = s.chars();
-    while let Some(c) = chars.next() {
-        if c != '\\' {
-            out.push(c);
-            continue;
-        }
-        match chars.next() {
-            Some(e @ ('\\' | '"' | ',' | ':')) => out.push(e),
-            _ => return None,
+/// Read one escaped-quoted string from the front of `s`.
+///
+/// Returns the unescaped content and the remainder after the closing quote.
+/// A `split(',')`-style parse cannot work here: escaped separators may
+/// appear inside keys and would split a single entry in two.
+fn take_quoted(s: &str) -> Option<(String, &str)> {
+    let rest = s.strip_prefix('"')?;
+    let mut out = String::new();
+    let mut chars = rest.char_indices();
+    while let Some((i, c)) = chars.next() {
+        match c {
+            '"' => return Some((out, &rest[i + 1..])),
+            '\\' => match chars.next() {
+                Some((_, e @ ('\\' | '"' | ',' | ':'))) => out.push(e),
+                _ => return None,
+            },
+            c => out.push(c),
         }
     }
-    Some(out)
+    None
 }
 
 /// Minimal JSON object reader: {"name":"aa:bb:..."} — enough for this store.
@@ -246,28 +251,24 @@ fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, S
     if inner.is_empty() {
         return Ok(map);
     }
-    for pair in inner.split(',') {
-        let mut kv = pair.splitn(2, ':');
-        let key = kv.next().unwrap_or("").trim();
-        let value = kv
-            .next()
-            .ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "malformed original MAC store entry",
-                )
-            })?
-            .trim();
-        let key = key
-            .strip_prefix('"')
-            .and_then(|s| s.strip_suffix('"'))
-            .and_then(unescape_key)
-            .unwrap_or_default();
-        let value = value
-            .strip_prefix('"')
-            .and_then(|s| s.strip_suffix('"'))
-            .and_then(unescape_key)
-            .unwrap_or_default();
+    let malformed = || io::Error::new(io::ErrorKind::InvalidData, "malformed original MAC store");
+    let mut rest = inner;
+    loop {
+        rest = rest.trim_start();
+        if rest.is_empty() {
+            break;
+        }
+        let (key, remainder) = take_quoted(rest).ok_or_else(malformed)?;
+        rest = remainder.trim_start();
+        rest = rest.strip_prefix(':').ok_or_else(malformed)?;
+        rest = rest.trim_start();
+        let (value, remainder) = take_quoted(rest).ok_or_else(malformed)?;
+        rest = remainder.trim_start();
+        match rest.strip_prefix(',') {
+            Some(remainder) => rest = remainder,
+            None if rest.is_empty() => {}
+            None => return Err(malformed()),
+        }
         if key.is_empty() || value.parse::<MacAddress>().is_err() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -280,7 +281,7 @@ fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, S
                 "duplicate interface in original MAC store",
             ));
         }
-        map.insert(key.to_string(), value.to_string());
+        map.insert(key, value);
     }
     Ok(map)
 }
@@ -545,9 +546,11 @@ mod tests {
 
     #[test]
     fn dangling_escapes_are_rejected_not_silently_dropped() {
-        assert_eq!(unescape_key("trailing\\"), None);
-        assert_eq!(unescape_key("bad\\xescape"), None);
-        assert_eq!(unescape_key("a\\:b\\\"c").as_deref(), Some("a:b\"c"));
+        assert_eq!(take_quoted("\"trailing\\\""), None);
+        assert_eq!(take_quoted("\"bad\\xescape\""), None);
+        let (out, rest) = take_quoted("\"a\\:b\\\"c\"tail").unwrap();
+        assert_eq!(out, "a:b\"c");
+        assert_eq!(rest, "tail");
     }
 
     #[test]
