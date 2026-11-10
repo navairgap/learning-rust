@@ -23,6 +23,7 @@ COMMANDS:
     random <iface>       set a random locally-administered MAC (root required)
     reset <iface>        restore the saved original MAC (root required)
     original <iface>     show the saved original MAC, if any
+    selftest             check entropy, interface access, and store writability
     help                 show this help
     version              show the version
 
@@ -40,6 +41,11 @@ fn main() -> ExitCode {
         "list" if args.len() == 1 => cmd_list(),
         "list" => {
             eprintln!("macabre: 'list' takes no arguments");
+            ExitCode::from(2)
+        }
+        "selftest" if args.len() == 1 => cmd_selftest(),
+        "selftest" => {
+            eprintln!("macabre: 'selftest' takes no arguments");
             ExitCode::from(2)
         }
         "get" => with_iface(&args, cmd_get),
@@ -196,6 +202,43 @@ fn cmd_original(name: &str) -> ExitCode {
             ExitCode::from(1)
         }
         Err(e) => fail(&format!("reading store: {e}")),
+    }
+}
+
+/// End-to-end environment check a human can run after any change.
+fn cmd_selftest() -> ExitCode {
+    let mut ok = true;
+
+    match MacAddress::random_local() {
+        Ok(mac) => println!("entropy:   ok ({mac})"),
+        Err(e) => {
+            eprintln!("entropy:   {e}");
+            ok = false;
+        }
+    }
+
+    match iface::list_interfaces() {
+        Ok(list) => println!("interfaces: ok ({} found)", list.len()),
+        Err(e) => {
+            eprintln!("interfaces: {e}");
+            ok = false;
+        }
+    }
+
+    match iface::store_is_writable() {
+        Ok(()) => println!("store:      ok"),
+        Err(e) => {
+            eprintln!("store:      {e}");
+            ok = false;
+        }
+    }
+
+    if ok {
+        println!("selftest passed");
+        ExitCode::SUCCESS
+    } else {
+        eprintln!("selftest failed");
+        ExitCode::FAILURE
     }
 }
 

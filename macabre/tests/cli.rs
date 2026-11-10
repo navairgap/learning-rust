@@ -18,6 +18,22 @@ fn help_is_successful_and_describes_commands() {
 }
 
 #[test]
+fn selftest_passes_unprivileged() {
+    let output = macabre().arg("selftest").output().expect("run macabre");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for section in ["entropy", "interfaces", "store"] {
+        assert!(stdout.contains(section), "missing selftest section: {section}");
+    }
+    assert!(stdout.contains("selftest passed"));
+}
+
+#[test]
 fn version_flag_prints_the_crate_version() {
     let expected = format!("macabre {}", env!("CARGO_PKG_VERSION"));
 

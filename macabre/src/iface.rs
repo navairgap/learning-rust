@@ -185,6 +185,18 @@ fn store_path() -> io::Result<std::path::PathBuf> {
     .map(|dir| dir.join("originals.json"))
 }
 
+/// Verify the store location is usable: its directory can be created and a
+/// probe file written and removed next to the store.
+pub fn store_is_writable() -> io::Result<()> {
+    let path = store_path()?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let probe = path.with_file_name(format!(".macabre-probe.{}", std::process::id()));
+    fs::write(&probe, b"")?;
+    fs::remove_file(&probe)
+}
+
 fn load_table(path: &std::path::Path) -> io::Result<std::collections::HashMap<String, String>> {
     match fs::read_to_string(path) {
         Ok(text) => serdeless_parse(&text),
