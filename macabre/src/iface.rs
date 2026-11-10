@@ -160,14 +160,29 @@ pub fn clear_original(name: &str) -> io::Result<()> {
     write_table(&path, &table)
 }
 
+/// Resolve the base directory for the saved-MAC store.
+///
+/// Per the XDG Base Directory spec, a relative XDG_DATA_HOME is invalid and
+/// must be ignored in favor of the HOME default.
+fn data_home(
+    xdg: Option<&std::ffi::OsStr>,
+    home: Option<&std::ffi::OsStr>,
+) -> io::Result<std::path::PathBuf> {
+    let base = match xdg.map(std::path::PathBuf::from) {
+        Some(dir) if dir.is_absolute() => dir,
+        _ => home
+            .map(|h| std::path::PathBuf::from(h).join(".local/share"))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no HOME or XDG_DATA_HOME"))?,
+    };
+    Ok(base.join("macabre"))
+}
+
 fn store_path() -> io::Result<std::path::PathBuf> {
-    let dir = std::env::var_os("XDG_DATA_HOME")
-        .map(std::path::PathBuf::from)
-        .or_else(|| {
-            std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".local/share"))
-        })
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no HOME or XDG_DATA_HOME"))?;
-    Ok(dir.join("macabre/originals.json"))
+    data_home(
+        std::env::var_os("XDG_DATA_HOME").as_deref(),
+        std::env::var_os("HOME").as_deref(),
+    )
+    .map(|dir| dir.join("originals.json"))
 }
 
 fn load_table(path: &std::path::Path) -> io::Result<std::collections::HashMap<String, String>> {
@@ -464,6 +479,38 @@ mod tests {
             io::ErrorKind::InvalidInput
         );
     }
+    #[test]
+    fn data_home_prefers_absolute_xdg_overrides() {
+        use std::ffi::OsStr;
+
+        let home = OsStr::new("/home/someone");
+        assert_eq!(
+            data_home(Some(OsStr::new("/xdg/data")), Some(home)).unwrap(),
+            std::path::PathBuf::from("/xdg/data/macabre")
+        );
+    }
+
+    #[test]
+    fn data_home_ignores_relative_xdg_overrides() {
+        use std::ffi::OsStr;
+
+        let home = OsStr::new("/home/someone");
+        // Per the XDG spec a relative XDG_DATA_HOME is invalid, not
+        // cwd-relative: fall back to HOME.
+        assert_eq!(
+            data_home(Some(OsStr::new("relative/path")), Some(home)).unwrap(),
+            std::path::PathBuf::from("/home/someone/.local/share/macabre")
+        );
+    }
+
+    #[test]
+    fn data_home_without_any_base_is_an_error() {
+        assert_eq!(
+            data_home(None, None).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
+    }
+
     #[test]
     fn non_utf8_interface_names_are_skipped_not_mangled() {
         use std::ffi::OsStr;
