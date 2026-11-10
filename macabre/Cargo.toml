@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 description = "your MAC, requiem'd — change and restore interface MAC addresses on Linux"
 license = "MIT"
+repository = "https://github.com/navairgap/learning-rust"
+keywords = ["mac", "network", "linux", "cli"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 libc = "0.2"
