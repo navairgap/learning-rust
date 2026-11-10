@@ -154,6 +154,34 @@ mod tests {
     }
 
     #[test]
+    fn rejects_empty_input_and_empty_octets() {
+        assert_eq!(
+            "".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadLength
+        );
+        assert_eq!(
+            "de:ad:be:ef:00:".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
+        assert_eq!(
+            ":::de:ad".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
+    }
+
+    #[test]
+    fn rejects_hex_prefixed_octets() {
+        assert_eq!(
+            "0x02:ab:cd:ef:00:11".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
+        assert_eq!(
+            "0x:ab:cd:ef:00:11".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
+    }
+
+    #[test]
     fn rejects_bad_hex() {
         assert_eq!(
             "de:ad:be:ef:00:zz".parse::<MacAddress>().unwrap_err(),
