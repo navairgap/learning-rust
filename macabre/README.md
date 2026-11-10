@@ -1,5 +1,7 @@
 # macabre
 
+![macabre terminal demo](docs/demo.gif)
+
 Change and restore network interface MAC addresses on Linux. A single static-friendly binary with no daemon and no configuration — just ioctls and a JSON store.
 
 ## Motivation
@@ -9,10 +11,10 @@ A MAC address is visible to every network you join. Rotating it is a standard pr
 ## Installation
 
 ```bash
-cd macabre
-cargo build --release
-sudo cp target/release/macabre /usr/local/bin/
+cargo install --git https://github.com/navairgap/learning-rust macabre
 ```
+
+Installs the binary to `~/.cargo/bin`. The write commands (`set`, `random`, `reset`) need root or `CAP_NET_ADMIN` — run them with `sudo`.
 
 ## Usage
 

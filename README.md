@@ -2,6 +2,8 @@
 
 Rust exercises and mini-projects, built one concept at a time.
 
+![macabre terminal demo](macabre/docs/demo.gif)
+
 ## Purpose
 
 A public record of learning Rust: small tools, the mistakes made along the way, and the habits that stuck. Each project focuses on a specific area of the language and the surrounding systems discipline — ownership, unsafe boundaries, error handling, testing.
