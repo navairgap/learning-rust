@@ -46,15 +46,15 @@ next rust projects, in order: a tiny shell (fork/exec/pipes), a bump allocator, 
 
 ## Unsafe audit
 
-macabre has three `unsafe` blocks: socket creation, ioctl, and the sockaddr transmute. each wraps a libc call with checked returns; no unsafe leaks past the iface boundary.
+macabre has five `unsafe` blocks: socket creation, two ioctls, and the two sockaddr transmutes. each wraps a libc call with checked returns; no unsafe leaks past the iface boundary.
 
 ## Error handling policy
 
-library code returns `io::Result`; only `main` decides exit codes. no panics outside of allocation failure — the store tolerates corrupt files by starting empty.
+library code returns `io::Result`; only `main` decides exit codes. no panics — even the entropy source failure is a normal error. the store tolerates corrupt files by starting empty.
 
 ## Testing strategy
 
-unit tests live beside the code in `#[cfg(test)]` modules; CI runs build + test + clippy `-D warnings` + rustfmt on every push. the `selftest` subcommand is an end-to-end check a human can run after any change.
+unit tests live beside the code in `#[cfg(test)]` modules plus a CLI contract suite in `tests/`; CI runs build + test + clippy + rustfmt on every push. the `selftest` subcommand is an end-to-end check a human can run after any change.
 
 ## Toolchain
 
