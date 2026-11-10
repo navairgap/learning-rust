@@ -1,0 +1,30 @@
+name: Bug report
+description: macabre didn't behave as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: The exact command you ran, the output, and what you expected instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: macabre version
+      description: Output of `macabre --version`.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Distro, kernel version (`uname -r`), and interface type (Wi-Fi, Ethernet, VPN).
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Store contents, dmesg lines, or anything else relevant.
