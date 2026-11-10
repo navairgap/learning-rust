@@ -174,11 +174,23 @@ fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, S
     for pair in inner.split(',') {
         let mut kv = pair.splitn(2, ':');
         let key = kv.next().unwrap_or("").trim();
-        let value = kv.next().ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, "malformed original MAC store entry")
-        })?.trim();
-        let key = key.strip_prefix('"').and_then(|s| s.strip_suffix('"')).unwrap_or("");
-        let value = value.strip_prefix('"').and_then(|s| s.strip_suffix('"')).unwrap_or("");
+        let value = kv
+            .next()
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "malformed original MAC store entry",
+                )
+            })?
+            .trim();
+        let key = key
+            .strip_prefix('"')
+            .and_then(|s| s.strip_suffix('"'))
+            .unwrap_or("");
+        let value = value
+            .strip_prefix('"')
+            .and_then(|s| s.strip_suffix('"'))
+            .unwrap_or("");
         if key.is_empty() || value.parse::<MacAddress>().is_err() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -216,11 +228,8 @@ fn write_table(
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_nanos();
-    let tmp_path = path.with_file_name(format!(
-        ".{file_name}.{}.{}.tmp",
-        std::process::id(),
-        nonce,
-    ));
+    let tmp_path =
+        path.with_file_name(format!(".{file_name}.{}.{}.tmp", std::process::id(), nonce,));
     let mut created = false;
     let result: io::Result<()> = (|| {
         let mut temp = fs::OpenOptions::new()
@@ -247,7 +256,10 @@ mod tests {
     fn missing_original_store_is_treated_as_empty() {
         use std::time::{SystemTime, UNIX_EPOCH};
 
-        let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let path = std::env::temp_dir().join(format!("macabre-missing-store-{unique}.json"));
         assert!(!path.exists());
         assert!(load_table(&path).unwrap().is_empty());
@@ -275,7 +287,10 @@ mod tests {
     fn write_table_creates_missing_parent_directories() {
         use std::time::{SystemTime, UNIX_EPOCH};
 
-        let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let root = std::env::temp_dir().join(format!("macabre-store-parent-test-{unique}"));
         let path = root.join("nested/originals.json");
         let mut table = std::collections::HashMap::new();
@@ -285,14 +300,20 @@ mod tests {
         let loaded = load_table(&path).unwrap();
         let _ = fs::remove_dir_all(&root);
 
-        assert_eq!(loaded.get("wlan0").map(String::as_str), Some("02:00:00:00:00:01"));
+        assert_eq!(
+            loaded.get("wlan0").map(String::as_str),
+            Some("02:00:00:00:00:01")
+        );
     }
 
     #[test]
     fn write_table_replaces_store_without_leaving_temp_files() {
         use std::time::{SystemTime, UNIX_EPOCH};
 
-        let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let root = std::env::temp_dir().join(format!("macabre-atomic-store-{unique}"));
         fs::create_dir_all(&root).unwrap();
         let path = root.join("originals.json");
@@ -308,7 +329,10 @@ mod tests {
         let entries: Vec<_> = fs::read_dir(&root).unwrap().collect();
         let _ = fs::remove_dir_all(&root);
         assert_eq!(loaded.len(), 1);
-        assert_eq!(loaded.get("enp2s0").map(String::as_str), Some("02:00:00:00:00:02"));
+        assert_eq!(
+            loaded.get("enp2s0").map(String::as_str),
+            Some("02:00:00:00:00:02")
+        );
         assert_eq!(entries.len(), 1);
     }
 
@@ -316,7 +340,10 @@ mod tests {
     fn store_serialization_is_stable_across_insertion_order() {
         use std::time::{SystemTime, UNIX_EPOCH};
 
-        let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let base = std::env::temp_dir().join(format!("macabre-store-test-{unique}"));
         let first_path = base.with_extension("first.json");
         let second_path = base.with_extension("second.json");
@@ -345,7 +372,9 @@ mod tests {
             io::ErrorKind::InvalidData
         );
         assert_eq!(
-            serdeless_parse("{\"eth0\":\"not-a-mac\"}").unwrap_err().kind(),
+            serdeless_parse("{\"eth0\":\"not-a-mac\"}")
+                .unwrap_err()
+                .kind(),
             io::ErrorKind::InvalidData
         );
     }
@@ -361,11 +390,17 @@ mod tests {
 
     #[test]
     fn parses_multiple_original_mac_entries() {
-        let table = serdeless_parse(
-            "{\"wlan0\":\"02:00:00:00:00:01\",\"enp2s0\":\"02:00:00:00:00:02\"}"
-        ).unwrap();
-        assert_eq!(table.get("wlan0").map(String::as_str), Some("02:00:00:00:00:01"));
-        assert_eq!(table.get("enp2s0").map(String::as_str), Some("02:00:00:00:00:02"));
+        let table =
+            serdeless_parse("{\"wlan0\":\"02:00:00:00:00:01\",\"enp2s0\":\"02:00:00:00:00:02\"}")
+                .unwrap();
+        assert_eq!(
+            table.get("wlan0").map(String::as_str),
+            Some("02:00:00:00:00:01")
+        );
+        assert_eq!(
+            table.get("enp2s0").map(String::as_str),
+            Some("02:00:00:00:00:02")
+        );
     }
 
     #[test]
@@ -425,5 +460,4 @@ mod tests {
         assert_eq!(unsafe { libc::fcntl(raw, libc::F_GETFD) }, -1);
         assert_eq!(io::Error::last_os_error().raw_os_error(), Some(libc::EBADF));
     }
-
 }

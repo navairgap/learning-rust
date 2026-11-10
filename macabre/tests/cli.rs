@@ -19,7 +19,10 @@ fn help_is_successful_and_describes_commands() {
 
 #[test]
 fn unknown_command_returns_usage_error() {
-    let output = macabre().arg("not-a-command").output().expect("run macabre");
+    let output = macabre()
+        .arg("not-a-command")
+        .output()
+        .expect("run macabre");
 
     assert_eq!(output.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&output.stderr).contains("unknown command"));
@@ -36,7 +39,10 @@ fn interface_commands_require_exactly_one_argument() {
 
 #[test]
 fn set_requires_both_interface_and_mac_before_system_operations() {
-    let output = macabre().args(["set", "wlan0"]).output().expect("run macabre");
+    let output = macabre()
+        .args(["set", "wlan0"])
+        .output()
+        .expect("run macabre");
 
     assert_eq!(output.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&output.stderr).contains("interface name and one MAC"));
@@ -52,9 +58,11 @@ fn invalid_mac_is_rejected_before_interface_or_privilege_checks() {
     assert_eq!(output.status.code(), Some(2));
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("bad MAC"), "unexpected stderr: {stderr}");
-    assert!(!stderr.contains("requires root"), "MAC parsing must happen first");
+    assert!(
+        !stderr.contains("requires root"),
+        "MAC parsing must happen first"
+    );
 }
-
 
 #[test]
 fn random_does_not_print_a_mac_when_interface_validation_fails() {
@@ -64,7 +72,10 @@ fn random_does_not_print_a_mac_when_interface_validation_fails() {
         .expect("run macabre");
 
     assert!(!output.status.success());
-    assert!(output.stdout.is_empty(), "must not announce an unapplied address");
+    assert!(
+        output.stdout.is_empty(),
+        "must not announce an unapplied address"
+    );
 }
 
 #[test]
@@ -76,8 +87,14 @@ fn multicast_mac_is_rejected_before_interface_operations() {
 
     assert_eq!(output.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("refusing multicast MAC"), "unexpected stderr: {stderr}");
-    assert!(!stderr.contains("missing-interface"), "interface lookup should not run");
+    assert!(
+        stderr.contains("refusing multicast MAC"),
+        "unexpected stderr: {stderr}"
+    );
+    assert!(
+        !stderr.contains("missing-interface"),
+        "interface lookup should not run"
+    );
 }
 
 #[test]
@@ -88,5 +105,8 @@ fn valid_mac_attempt_is_not_rejected_by_an_euid_only_root_gate() {
         .expect("run macabre");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(!stderr.contains("requires root"), "capability-aware ioctl path should decide access");
+    assert!(
+        !stderr.contains("requires root"),
+        "capability-aware ioctl path should decide access"
+    );
 }

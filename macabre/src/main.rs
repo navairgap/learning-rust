@@ -39,7 +39,7 @@ fn main() -> ExitCode {
         "list" => {
             eprintln!("macabre: 'list' takes no arguments");
             ExitCode::from(2)
-        },
+        }
         "get" => with_iface(&args, cmd_get),
         "set" => with_mac(&args, cmd_set),
         "random" => with_iface(&args, cmd_random),
