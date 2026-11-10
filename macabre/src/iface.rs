@@ -84,18 +84,22 @@ fn ifreq_for(name: &str) -> io::Result<ifreq> {
     Ok(req)
 }
 
+/// Map an ioctl return code to an io::Result, capturing errno on failure.
+fn ioctl_result(rc: i32) -> io::Result<()> {
+    if rc < 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
+}
+
 /// Read the current MAC address of an interface.
 pub fn get_mac(name: &str) -> io::Result<MacAddress> {
     // Validate before opening the control socket so invalid input cannot leak an fd.
     let mut req = ifreq_for(name)?;
     let fd = control_socket()?;
     let rc = unsafe { ioctl(fd.as_raw_fd(), SIOCGIFHWADDR, &mut req) };
-    let result = if rc < 0 {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(())
-    };
-    result?;
+    ioctl_result(rc)?;
     let raw: RawSockaddr = unsafe { std::mem::transmute(req.ifr_ifru.ifru_hwaddr) };
     let mut octets = [0u8; 6];
     octets.copy_from_slice(&raw.data[..6]);
@@ -125,10 +129,7 @@ pub fn set_mac(name: &str, mac: MacAddress) -> io::Result<()> {
     let fd = control_socket()?;
     req.ifr_ifru.ifru_hwaddr = hwaddr_sockaddr(mac);
     let rc = unsafe { ioctl(fd.as_raw_fd(), SIOCSIFHWADDR, &mut req) };
-    if rc < 0 {
-        return Err(io::Error::last_os_error());
-    }
-    Ok(())
+    ioctl_result(rc)
 }
 
 /// Save an interface's current MAC to the store file.
