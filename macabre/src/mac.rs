@@ -164,7 +164,7 @@ mod tests {
             ParseMacError::BadOctet
         );
         assert_eq!(
-            ":::de:ad".parse::<MacAddress>().unwrap_err(),
+            "de:ad::ef:00:01".parse::<MacAddress>().unwrap_err(),
             ParseMacError::BadOctet
         );
     }
