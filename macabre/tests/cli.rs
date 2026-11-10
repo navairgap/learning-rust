@@ -164,3 +164,88 @@ fn valid_mac_attempt_is_not_rejected_by_an_euid_only_root_gate() {
         "capability-aware ioctl path should decide access"
     );
 }
+
+/// An isolated XDG_DATA_HOME so store-reading tests never touch real user data.
+fn isolated_data_home() -> std::path::PathBuf {
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("macabre-cli-test-{unique}"));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+#[test]
+fn original_reports_missing_entry_with_exit_1() {
+    let output = macabre()
+        .env("XDG_DATA_HOME", isolated_data_home())
+        .args(["original", "wlan0"])
+        .output()
+        .expect("run macabre");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("no saved original MAC"),
+        "unexpected stderr: {stderr}"
+    );
+    assert!(output.stdout.is_empty());
+}
+
+#[test]
+fn reset_without_a_saved_mac_explains_and_exits_1() {
+    let output = macabre()
+        .env("XDG_DATA_HOME", isolated_data_home())
+        .args(["reset", "wlan0"])
+        .output()
+        .expect("run macabre");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("nothing to reset"),
+        "unexpected stderr: {stderr}"
+    );
+}
+
+#[test]
+fn get_on_a_missing_interface_exits_1_with_the_os_error() {
+    let output = macabre()
+        .args(["get", "macabre-no-such-iface"])
+        .output()
+        .expect("run macabre");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("macabre-no-such-iface"),
+        "unexpected stderr: {stderr}"
+    );
+    assert!(
+        !stderr.contains("refusing"),
+        "a valid unicast attempt must reach the ioctl path"
+    );
+}
+
+#[test]
+fn list_runs_unprivileged_and_exits_zero() {
+    let output = macabre().arg("list").output().expect("run macabre");
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn selftest_rejects_extra_arguments() {
+    let output = macabre()
+        .args(["selftest", "extra"])
+        .output()
+        .expect("run macabre");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("takes no arguments"));
+}
