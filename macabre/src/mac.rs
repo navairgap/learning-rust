@@ -80,6 +80,10 @@ impl FromStr for MacAddress {
             if part.len() != 2 {
                 return Err(ParseMacError::BadOctet);
             }
+            // from_str_radix accepts a leading '+'/'-' sign; hex octets never have one.
+            if part.starts_with('+') || part.starts_with('-') {
+                return Err(ParseMacError::BadOctet);
+            }
             octets[i] = u8::from_str_radix(part, 16).map_err(|_| ParseMacError::BadOctet)?;
         }
         Ok(MacAddress(octets))
@@ -130,6 +134,18 @@ mod tests {
     fn rejects_whitespace_inside_octets() {
         assert_eq!(
             "aa:bb:cc:dd:ee: ff".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
+    }
+
+    #[test]
+    fn rejects_sign_prefixed_octets() {
+        assert_eq!(
+            "de:ad:be:ef:00:+a".parse::<MacAddress>().unwrap_err(),
+            ParseMacError::BadOctet
+        );
+        assert_eq!(
+            "de:ad:be:ef:00:-1".parse::<MacAddress>().unwrap_err(),
             ParseMacError::BadOctet
         );
     }
