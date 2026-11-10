@@ -91,24 +91,32 @@ pub fn get_mac(name: &str) -> io::Result<MacAddress> {
     Ok(MacAddress::from_octets(octets))
 }
 
+/// Build the sockaddr carrying the new MAC for SIOCSIFHWADDR.
+///
+/// The family must match the device type (ARPHRD_ETHER for typical
+/// interfaces): modern kernels reject the ioctl with EINVAL when
+/// `sa_family != dev->type`, and AF_UNSPEC is no longer accepted.
+fn hwaddr_sockaddr(mac: MacAddress) -> sockaddr {
+    let octets = mac.octets();
+    let mut data = [0u8; 14];
+    data[..6].copy_from_slice(&octets);
+    let raw = RawSockaddr {
+        family: libc::ARPHRD_ETHER as u16,
+        data,
+    };
+    unsafe { std::mem::transmute(raw) }
+}
+
 /// Set the MAC address of an interface. Requires root (or CAP_NET_ADMIN).
 pub fn set_mac(name: &str, mac: MacAddress) -> io::Result<()> {
     // Validate before opening the control socket so invalid input cannot leak an fd.
     let mut req = ifreq_for(name)?;
     let fd = control_socket()?;
-    let octets = mac.octets();
-    let mut data = [0u8; 14];
-    data[..6].copy_from_slice(&octets);
-    let raw = RawSockaddr { family: 0, data };
-    let sa: sockaddr = unsafe { std::mem::transmute(raw) };
-    req.ifr_ifru.ifru_hwaddr = sa;
+    req.ifr_ifru.ifru_hwaddr = hwaddr_sockaddr(mac);
     let rc = unsafe { ioctl(fd.as_raw_fd(), SIOCSIFHWADDR, &mut req) };
-    let result = if rc < 0 {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(())
-    };
-    result?;
+    if rc < 0 {
+        return Err(io::Error::last_os_error());
+    }
     Ok(())
 }
 
@@ -445,6 +453,14 @@ mod tests {
             io::ErrorKind::InvalidInput
         );
     }
+    #[test]
+    fn hwaddr_sockaddr_carries_ether_family_and_octets() {
+        let sa = hwaddr_sockaddr(MacAddress::from_octets([0x02, 0xab, 0xcd, 0xef, 0x00, 0x11]));
+        assert_eq!(sa.sa_family, libc::ARPHRD_ETHER as libc::sa_family_t);
+        let raw: RawSockaddr = unsafe { std::mem::transmute(sa) };
+        assert_eq!(&raw.data[..6], &[0x02, 0xab, 0xcd, 0xef, 0x00, 0x11]);
+    }
+
     #[test]
     fn control_socket_owns_and_closes_its_descriptor() {
         use std::os::fd::AsRawFd;
