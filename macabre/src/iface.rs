@@ -193,6 +193,42 @@ fn load_table(path: &std::path::Path) -> io::Result<std::collections::HashMap<St
     }
 }
 
+/// Escape a store key or value.
+///
+/// Linux interface names may contain any byte except '/' and NUL, so the
+/// separators this hand-rolled JSON relies on (`"`, `,`, `:`, `\`) can all
+/// appear inside a name and must be escaped to keep the store round-trippable.
+fn escape_key(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '\\' | '"' | ',' | ':' => {
+                out.push('\\');
+                out.push(c);
+            }
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// Undo [`escape_key`]. Returns None on a dangling or unknown escape.
+fn unescape_key(s: &str) -> Option<String> {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            out.push(c);
+            continue;
+        }
+        match chars.next() {
+            Some(e @ ('\\' | '"' | ',' | ':')) => out.push(e),
+            _ => return None,
+        }
+    }
+    Some(out)
+}
+
 /// Minimal JSON object reader: {"name":"aa:bb:..."} — enough for this store.
 fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, String>> {
     let mut map = std::collections::HashMap::new();
@@ -225,11 +261,13 @@ fn serdeless_parse(text: &str) -> io::Result<std::collections::HashMap<String, S
         let key = key
             .strip_prefix('"')
             .and_then(|s| s.strip_suffix('"'))
-            .unwrap_or("");
+            .and_then(unescape_key)
+            .unwrap_or_default();
         let value = value
             .strip_prefix('"')
             .and_then(|s| s.strip_suffix('"'))
-            .unwrap_or("");
+            .and_then(unescape_key)
+            .unwrap_or_default();
         if key.is_empty() || value.parse::<MacAddress>().is_err() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -258,7 +296,7 @@ fn write_table(
     }
     let mut body: Vec<String> = table
         .iter()
-        .map(|(k, v)| format!("\"{k}\":\"{v}\""))
+        .map(|(k, v)| format!("\"{}\":\"{}\"", escape_key(k), escape_key(v)))
         .collect();
     body.sort_unstable();
     let payload = format!("{{{}}}", body.join(","));
@@ -479,6 +517,39 @@ mod tests {
             io::ErrorKind::InvalidInput
         );
     }
+    #[test]
+    fn keys_with_json_separators_roundtrip_through_the_store() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("macabre-escape-store-{unique}"));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("originals.json");
+        // Every character the hand-rolled JSON treats as a separator.
+        let hostile = "a:b, c\"d\\e";
+        let mut table = std::collections::HashMap::new();
+        table.insert(hostile.to_string(), "02:00:00:00:00:01".to_string());
+
+        write_table(&path, &table).unwrap();
+        let loaded = load_table(&path).unwrap();
+        let _ = fs::remove_dir_all(&root);
+
+        assert_eq!(
+            loaded.get(hostile).map(String::as_str),
+            Some("02:00:00:00:00:01")
+        );
+    }
+
+    #[test]
+    fn dangling_escapes_are_rejected_not_silently_dropped() {
+        assert_eq!(unescape_key("trailing\\"), None);
+        assert_eq!(unescape_key("bad\\xescape"), None);
+        assert_eq!(unescape_key("a\\:b\\\"c").as_deref(), Some("a:b\"c"));
+    }
+
     #[test]
     fn data_home_prefers_absolute_xdg_overrides() {
         use std::ffi::OsStr;
