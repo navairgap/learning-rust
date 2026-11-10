@@ -125,16 +125,24 @@ fn cmd_set(name: &str, mac: MacAddress) -> ExitCode {
     if !mac.is_locally_administered() {
         eprintln!("macabre: note: {mac} is not locally administered");
     }
-    if let Err(e) = original_guard(name) {
+    // Capture the original before the change, but only persist it once the
+    // change succeeded: a failed set must not leave a store entry claiming
+    // an "original" that is really just the unchanged address.
+    let original = match iface::get_mac(name) {
+        Ok(current) => current,
+        Err(e) => return fail(&format!("{name}: {e}")),
+    };
+    if let Err(e) = iface::set_mac(name, mac) {
+        return fail(&format!("{name}: {e}"));
+    }
+    if let Err(e) = iface::save_original(name, original) {
+        // Undo the change so the user is never stuck with a new MAC and no
+        // way back through `reset`.
+        let _ = iface::set_mac(name, original);
         return fail(&format!("saving original MAC: {e}"));
     }
-    match iface::set_mac(name, mac) {
-        Ok(()) => {
-            println!("{name}: MAC set to {mac}");
-            ExitCode::SUCCESS
-        }
-        Err(e) => fail(&format!("{name}: {e}")),
-    }
+    println!("{name}: MAC set to {mac}");
+    ExitCode::SUCCESS
 }
 
 fn cmd_random(name: &str) -> ExitCode {
@@ -173,17 +181,6 @@ fn cmd_original(name: &str) -> ExitCode {
             ExitCode::from(1)
         }
         Err(e) => fail(&format!("reading store: {e}")),
-    }
-}
-
-/// Save the interface's current MAC as "the original" the first time we touch it.
-fn original_guard(name: &str) -> std::io::Result<()> {
-    match iface::load_original(name)? {
-        Some(_) => Ok(()),
-        None => {
-            let current = iface::get_mac(name)?;
-            iface::save_original(name, current)
-        }
     }
 }
 
