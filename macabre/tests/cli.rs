@@ -18,6 +18,26 @@ fn help_is_successful_and_describes_commands() {
 }
 
 #[test]
+fn version_flag_prints_the_crate_version() {
+    let expected = format!("macabre {}", env!("CARGO_PKG_VERSION"));
+
+    for args in [
+        vec!["--version"],
+        vec!["-V"],
+        vec!["version"],
+    ] {
+        let output = macabre().args(args).output().expect("run macabre");
+
+        assert!(output.status.success());
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.starts_with(expected.as_str()),
+            "unexpected version output: {stdout}"
+        );
+    }
+}
+
+#[test]
 fn unknown_command_returns_usage_error() {
     let output = macabre()
         .arg("not-a-command")

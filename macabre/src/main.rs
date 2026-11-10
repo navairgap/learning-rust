@@ -23,6 +23,8 @@ COMMANDS:
     random <iface>       set a random locally-administered MAC (root required)
     reset <iface>        restore the saved original MAC (root required)
     original <iface>     show the saved original MAC, if any
+    help                 show this help
+    version              show the version
 
 MAC format: six hex octets separated by colons, e.g. 02:ab:cd:ef:00:11
 ";
@@ -47,6 +49,10 @@ fn main() -> ExitCode {
         "original" => with_iface(&args, cmd_original),
         "-h" | "--help" | "help" => {
             print!("{USAGE}");
+            ExitCode::SUCCESS
+        }
+        "-V" | "--version" | "version" => {
+            println!("macabre {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
         other => {
