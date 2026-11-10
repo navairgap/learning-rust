@@ -37,6 +37,10 @@ Planned next projects, in order:
 
 Each reuses something macabre introduced: ioctls, unsafe discipline, or dependency-free parsing.
 
+## Contributing
+
+Corrections, tests, and docs improvements are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). I aim to respond to issues and PRs within 24 hours.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
